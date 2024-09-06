@@ -39,10 +39,10 @@ class Strategy:
             raise ValueError(f"DataFrame must contain the following columns: {required_columns}")
         
         # Generate signals using user-defined or default logic
-        df['Signal'] = df.apply(lambda row: self.signal_logic(row), axis=1)
+        df['signal'] = df.apply(lambda row: self.signal_logic(row), axis=1)
         
         # Generate positions using user-defined or default logic
-        df['Position'] = self.position_logic(df, df['Signal'])
+        df['position'] = self.position_logic(df, df['signal'])
         
         return df
 
@@ -70,36 +70,36 @@ class Strategy:
         """
         return signals.diff().fillna(0)  # Buy/sell when signal changes
 
-# # Example usage of the Strategy class
-# if __name__ == "__main__":
-#     # Mock data with columns: 'time', 'open', 'high', 'low', 'close', 'volume'
-#     data = pd.DataFrame({
-#         'time': pd.date_range(start='2023-01-01', periods=7, freq='D'),
-#         'open': [100, 101, 102, 103, 104, 105, 106],
-#         'high': [101, 102, 103, 104, 105, 106, 107],
-#         'low': [99, 100, 101, 102, 103, 104, 105],
-#         'close': [100, 102, 101, 104, 103, 105, 106],
-#         'volume': [1000, 1100, 1050, 1150, 1200, 1250, 1300]
-#     })
+# Example usage of the Strategy class
+if __name__ == "__main__":
+    # Mock data with columns: 'time', 'open', 'high', 'low', 'close', 'volume'
+    data = pd.DataFrame({
+        'time': pd.date_range(start='2023-01-01', periods=7, freq='D'),
+        'open': [100, 101, 102, 103, 104, 105, 106],
+        'high': [101, 102, 103, 104, 105, 106, 107],
+        'low': [99, 100, 101, 102, 103, 104, 105],
+        'close': [100, 102, 101, 104, 103, 105, 106],
+        'volume': [1000, 1100, 1050, 1150, 1200, 1250, 1300]
+    })
     
-#     # Custom signal logic: Buy if close price is greater than 102, sell if less than 102
-#     def custom_signal_logic(row: pd.Series) -> int:
-#         if row['close'] > 102:
-#             return 1  # Buy
-#         elif row['close'] < 102:
-#             return -1  # Sell
-#         return 0  # Hold
+    # Custom signal logic: Buy if close price is greater than 102, sell if less than 102
+    def custom_signal_logic(row: pd.Series) -> int:
+        if row['close'] > 102:
+            return 1  # Buy
+        elif row['close'] < 102:
+            return -1  # Sell
+        return 0  # Hold
 
-#     # Custom position logic: Enter/exit trades based on signal changes
-#     def custom_position_logic(df: pd.DataFrame, signals: pd.Series) -> pd.Series:
-#         return signals.diff().fillna(0)
+    # Custom position logic: Enter/exit trades based on signal changes
+    def custom_position_logic(df: pd.DataFrame, signals: pd.Series) -> pd.Series:
+        return signals.diff().fillna(0)
 
-#     # Instantiate the strategy with custom logic
-#     strategy = Strategy(
-#         signal_logic=custom_signal_logic,  # Custom signal generation logic
-#         position_logic=custom_position_logic  # Custom position logic
-#     )
+    # Instantiate the strategy with custom logic
+    strategy = Strategy(
+        signal_logic=custom_signal_logic,  # Custom signal generation logic
+        position_logic=custom_position_logic  # Custom position logic
+    )
 
-#     # Generate signals and positions
-#     result = strategy.generate_signals(data)
-#     print(result)
+    # Generate signals and positions
+    result = strategy.generate_signals(data)
+    print(result)
