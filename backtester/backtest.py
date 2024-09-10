@@ -1,4 +1,7 @@
 from typing import List, Dict
+import jinja2
+import mpld3
+import webbrowser
 import pandas as pd
 import matplotlib.pyplot as plt
 from backtester.performance import (
@@ -96,7 +99,7 @@ class Backtester:
                 else:
                     self.daily_portfolio_values[len(self.daily_portfolio_values) - 1] += self.assets_data[asset]["total_value"]
     
-    def performance(self, plot: bool = True) -> None:
+    def performance(self, output_html = "backtest_report.html", plot: bool = True) -> None:
         if not self.daily_portfolio_values:
             print("No portfolio history to calculate performance")
             return
@@ -113,37 +116,78 @@ class Backtester:
         drawdown_periods = calculate_drawdown_periods(portfolio_values)
         rolling_volatility = calculate_rolling_volatility(daily_returns)
 
-        print(f"Final Portfolio Value: {portfolio_values.iloc[-1]:.2f}")
-        print(f"Total Return: {total_returns:.2f}")
-        print(f"Annualized Return: {annualized_return:.2f}%")
-        print(f"Annualized Volatility: {annualized_volatility:.2f}%")
-        print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
-        print(f"Sortino Ratio: {sortino_ratio:.2f}")
-        print(f"Max Drawdown: {max_drawdown * 100:.2f}%")
-        print(f"Average Drawdown Periods: {drawdown_periods.mean():.2f}")
-        print(f"Rolling Volatility (Last 20 Days): {rolling_volatility.iloc[-1]:.2f}")
+        metrics = {
+            "Final Portfolio Value": portfolio_values.iloc[-1].round(2),
+            "Total Return": f"{total_returns:.2%}",  
+            "Annualized Return": f"{annualized_return:.2%}",
+            "Annualized Volatility": f"{annualized_volatility:.2%}",
+            "Sharpe Ratio": sharpe_ratio.round(2),
+            "Sortino Ratio": sortino_ratio.round(2),
+            "Max Drawdown": f"{-max_drawdown:.2%}",
+            "Average Drawdown Period": drawdown_periods.mean().round(2),
+            "Rolling Volatility (Last 20 Days)": f"{rolling_volatility.iloc[-1]:.2%}"
+        }
 
         if plot:
-            self.plot_performance(portfolio_values, daily_returns, rolling_volatility)
+            portfolio_plot_html = self.plot_performance(portfolio_values, daily_returns, rolling_volatility)
+        else:
+            portfolio_plot_html = ""
+        self.generate_html_report(metrics, portfolio_plot_html, output_html)
 
     def plot_performance(self, portfolio_values: Dict, daily_returns: pd.DataFrame, rolling_volatility: pd.Series = None) -> None:
-        plt.figure(figsize=(12, 6))
+        fig, axs = plt.subplots(3, 1, figsize=(12, 10))
 
-        plt.subplot(3, 1, 1)
-        plt.plot(portfolio_values, label="Portfolio Value", color="orange")
-        plt.title("Portfolio Value Over Time")
-        plt.legend()
+        axs[0].plot(portfolio_values, label="Portfolio Value", color="orange")
+        axs[0].set_title("Portfolio Value Over Time")
+        axs[0].legend()
 
-        plt.subplot(3, 1, 2)
-        plt.plot(daily_returns, label="Daily Returns")
-        plt.title("Daily Returns Over Time")
-        plt.legend()
+        axs[1].plot(daily_returns, label="Daily Returns")
+        axs[1].set_title("Daily Returns Over Time")
+        axs[1].legend()
 
         if rolling_volatility is not None:
-            plt.subplot(3, 1, 3)
-            plt.plot(rolling_volatility, label="Rolling Volatility (20 Days)", color="red")
-            plt.title("Rolling Volatility")
-            plt.legend()
+            axs[2].plot(rolling_volatility, label="Rolling Volatility (20 Days)", color="red")
+            axs[2].set_title("Rolling Volatility")
+            axs[2].legend()
 
         plt.tight_layout()
-        plt.show()
+        plot_html = mpld3.fig_to_html(fig)
+        plt.close(fig)
+        return plot_html
+    
+    def generate_html_report(self, metrics: Dict, plot_html: str, output_html: str) -> None:
+        html_template = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Backtest Report</title>
+        </head>
+        <body>
+            <h1>Backtest Performance Report</h1>
+            <h2>Metrics</h2>
+            <table border="1">
+                {% for key, value in metrics.items() %}
+                <tr>
+                    <th>{{ key }}</th>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            
+            <h2>Performance Charts</h2>
+            <div>{{ plot_html | safe }}</div>
+        </body>
+        </html>
+        """
+
+        template = jinja2.Template(html_template)
+        html_content = template.render(metrics=metrics, plot_html=plot_html)
+
+        with open(output_html, "w") as f:
+            f.write(html_content)
+
+        print(f"Report saved to {output_html}")
+        
+        webbrowser.open(output_html)
