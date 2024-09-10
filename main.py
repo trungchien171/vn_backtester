@@ -15,8 +15,8 @@ def custom_position_logic(df: pd.DataFrame, signals: pd.Series) -> pd.Series:
 
 def main():
     symbol = 'HQC'
-    start_date = '2020-01-01'
-    end_date = '2022-12-31'
+    start_date = '2022-01-01'
+    end_date = '2024-09-09'
 
     data = DataRetrieval(symbol, start_date, end_date).load_data(interval = '1D')
 

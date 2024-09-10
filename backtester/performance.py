@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import mpld3
 
 def calculate_total_return(final_portfolio_value, initial_cap):
     return (final_portfolio_value/initial_cap) - 1
@@ -37,3 +39,21 @@ def calculate_drawdown_periods(portfolio_values: pd.Series):
 def calculate_rolling_volatility(daily_returns: pd.Series, window: int = 20):
     rolling_vol = daily_returns.rolling(window).std() * (252 ** 0.5)
     return rolling_vol
+
+def plot_underwater(portfolio_values: pd.Series) -> None:
+    running_max = portfolio_values.cummax()
+    drawdown = portfolio_values / running_max - 1
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(drawdown, color='blue', label="Drawdown")
+    ax.fill_between(drawdown.index, drawdown, 0, color='blue', alpha=0.3)
+
+    ax.set_title("Underwater Plot (Drawdowns Over Time)")
+    ax.set_ylabel("Drawdown (%)")
+    ax.set_xlabel("Time")
+    ax.legend()
+
+    plt.tight_layout()
+    plot_html = mpld3.fig_to_html(fig)
+    plt.close(fig)
+    return plot_html

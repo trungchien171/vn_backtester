@@ -4,6 +4,7 @@ import mpld3
 import webbrowser
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from backtester.performance import (
     calculate_total_return,
     calculate_annualized_return,
@@ -12,7 +13,8 @@ from backtester.performance import (
     calculate_sortino_ratio,
     calculate_maximum_drawdown,
     calculate_drawdown_periods,
-    calculate_rolling_volatility
+    calculate_rolling_volatility,
+    plot_underwater
 )
 
 class Backtester:
@@ -130,9 +132,11 @@ class Backtester:
 
         if plot:
             portfolio_plot_html = self.plot_performance(portfolio_values, daily_returns, rolling_volatility)
+            underwater_plot_html = plot_underwater(portfolio_values)
         else:
             portfolio_plot_html = ""
-        self.generate_html_report(metrics, portfolio_plot_html, output_html)
+            underwater_plot_html = ""
+        self.generate_html_report(metrics, portfolio_plot_html + underwater_plot_html, output_html)
 
     def plot_performance(self, portfolio_values: Dict, daily_returns: pd.DataFrame, rolling_volatility: pd.Series = None) -> None:
         fig, axs = plt.subplots(3, 1, figsize=(12, 10))
@@ -163,11 +167,71 @@ class Backtester:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Backtest Report</title>
+            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+            <style>
+                body {
+                    font-family: 'Roboto', sans-serif;
+                    background-color: #f4f4f9;
+                    color: #333;
+                    margin: 0;
+                    padding: 20px;
+                }
+                h1, h2 {
+                    text-align: center;
+                    color: #2c3e50;
+                }
+                h1 {
+                    font-size: 2.5em;
+                    margin-bottom: 20px;
+                }
+                h2 {
+                    font-size: 1.8em;
+                    margin-top: 30px;
+                }
+                table {
+                    width: 100%;
+                    max-width: 800px;
+                    margin: 20px auto;
+                    border-collapse: collapse;
+                    background-color: white;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                }
+                th, td {
+                    padding: 20px 15px;
+                    text-align: center; /* Center horizontally */
+                    vertical-align: middle; /* Center vertically */
+                    border-bottom: 1px solid #ddd;
+                }
+                th {
+                    background-color: #2c3e50;
+                    color: white;
+                    font-weight: 700;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                tr:hover {
+                    background-color: #f1f1f1;
+                }
+                .metrics-table {
+                    margin-bottom: 40px;
+                }
+                .chart-container {
+                    margin: 40px auto;
+                }
+                .chart {
+                    padding: 20px;
+                    background-color: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    width: 100%; /* Allow chart to be full width */
+                }
+            </style>
         </head>
         <body>
-            <h1>Backtest Performance Report</h1>
+            <h1>Backtest Report</h1>
             <h2>Metrics</h2>
-            <table border="1">
+            <table class="metrics-table">
                 {% for key, value in metrics.items() %}
                 <tr>
                     <th>{{ key }}</th>
@@ -177,7 +241,9 @@ class Backtester:
             </table>
             
             <h2>Performance Charts</h2>
-            <div>{{ plot_html | safe }}</div>
+            <div class="chart-container">
+                <div class="chart">{{ plot_html | safe }}</div>
+            </div>
         </body>
         </html>
         """
