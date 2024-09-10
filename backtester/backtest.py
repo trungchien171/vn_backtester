@@ -243,7 +243,9 @@ class Backtester:
                     margin-bottom: 40px;
                 }
                 .chart-container {
-                    margin: 40px auto;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                 }
                 .chart {
                     padding: 20px;
@@ -251,6 +253,10 @@ class Backtester:
                     border-radius: 8px;
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                     width: 100%; /* Allow chart to be full width */
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
                 }
             </style>
         </head>
