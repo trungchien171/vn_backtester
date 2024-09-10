@@ -14,7 +14,7 @@ def custom_position_logic(df: pd.DataFrame, signals: pd.Series) -> pd.Series:
     return signals.diff().fillna(0)
 
 def main():
-    symbol = ['HPG']
+    symbol = ['SSI']
     start_date = '2018-01-01'
     end_date = '2022-12-31'
     # start_date = '2023-01-01'

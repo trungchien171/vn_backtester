@@ -13,7 +13,15 @@ from backtester.performance import (
     calculate_maximum_drawdown,
     calculate_drawdown_periods,
     calculate_rolling_volatility,
-    plot_underwater
+    plot_underwater,
+    calculate_carmar_ratio,
+    calculate_omega_ratio,
+    calculate_var,
+    calculate_cvar,
+    calculate_stability,
+    calculate_tail_ratio,
+    calculate_skewness,
+    calculate_kurtosis
 )
 
 class Backtester:
@@ -114,10 +122,19 @@ class Backtester:
         annualized_return = calculate_annualized_return(total_returns, len(portfolio_values))
         annualized_volatility = calculate_annualized_volatility(daily_returns)
         sharpe_ratio = calculate_sharpe_ratio(annualized_return, annualized_volatility)
-        sortino_ratio = calculate_sortino_ratio(daily_returns, annualized_return)
         max_drawdown = calculate_maximum_drawdown(portfolio_values)
+        sortino_ratio = calculate_sortino_ratio(daily_returns, annualized_return)
         drawdown_periods = calculate_drawdown_periods(portfolio_values)
         rolling_volatility = calculate_rolling_volatility(daily_returns)
+        carmar_ratio = calculate_carmar_ratio(annualized_return, max_drawdown)
+        omega_ratio = calculate_omega_ratio(daily_returns)
+        var = calculate_var(daily_returns)
+        cvar = calculate_cvar(daily_returns)
+        stability = calculate_stability(portfolio_values)
+        tail_ratio = calculate_tail_ratio(daily_returns)
+        skewness = calculate_skewness(daily_returns)
+        kurtosis = calculate_kurtosis(daily_returns)
+
 
         metrics = {
             "Final Portfolio Value": portfolio_values.iloc[-1].round(2),
@@ -125,10 +142,18 @@ class Backtester:
             "Annualized Return": f"{annualized_return:.2%}",
             "Annualized Volatility": f"{annualized_volatility:.2%}",
             "Sharpe Ratio": sharpe_ratio.round(2),
-            "Sortino Ratio": sortino_ratio.round(2),
             "Max Drawdown": f"{-max_drawdown:.2%}",
+            "Sortino Ratio": sortino_ratio.round(2),
             "Average Drawdown Period": drawdown_periods.mean().round(2),
-            "Rolling Volatility (Last 20 Days)": f"{rolling_volatility.iloc[-1]:.2%}"
+            "Rolling Volatility (Last 20 Days)": f"{rolling_volatility.iloc[-1]:.2%}",
+            "Calmar Ratio": carmar_ratio.round(2),
+            "Omega Ratio": omega_ratio.round(2),
+            "Value at Risk (95%)": f"{var:.2%}",
+            "Conditional Value at Risk (95%)": f"{cvar:.2%}",
+            "Stability": stability.round(2),
+            "Tail Ratio": tail_ratio.round(2),
+            "Skewness": skewness.round(2),
+            "Kurtosis": kurtosis.round(2)
         }
 
         if plot:

@@ -40,6 +40,44 @@ def calculate_rolling_volatility(daily_returns: pd.Series, window: int = 20):
     rolling_vol = daily_returns.rolling(window).std() * (252 ** 0.5)
     return rolling_vol
 
+def calculate_carmar_ratio(annualized_return, max_drawdown):
+    try:
+        return annualized_return / abs(max_drawdown)
+    except ZeroDivisionError:
+        return np.nan
+    
+def calculate_omega_ratio(daily_returns, target_return=0):
+    positive_returns = daily_returns[daily_returns > target_return].sum()
+    negative_returns = abs(daily_returns[daily_returns < target_return].sum())
+    try:
+        return positive_returns / negative_returns
+    except ZeroDivisionError:
+        return np.nan
+
+def calculate_var(daily_returns, confidence_level=0.95):
+    return np.percentile(daily_returns, (1 - confidence_level) * 100)
+
+def calculate_cvar(daily_returns, confidence_level=0.95):
+    var_threshold = calculate_var(daily_returns, confidence_level)
+    return daily_returns[daily_returns <= var_threshold].mean()
+
+def calculate_stability(portfolio_values):
+    time = np.arange(len(portfolio_values))
+    log_values = np.log(portfolio_values)
+    slope, intercept = np.polyfit(time, log_values, 1)
+    return slope
+
+def calculate_tail_ratio(daily_returns):
+    percentile_95 = np.percentile(daily_returns, 95)
+    percentile_5 = np.percentile(daily_returns, 5)
+    return abs(percentile_95) / abs(percentile_5)
+
+def calculate_skewness(daily_returns):
+    return daily_returns.skew()
+
+def calculate_kurtosis(daily_returns):
+    return daily_returns.kurtosis()
+
 def plot_underwater(portfolio_values: pd.Series) -> None:
     running_max = portfolio_values.cummax()
     drawdown = portfolio_values / running_max - 1
