@@ -85,8 +85,8 @@ class Backtester:
 
         print(f"Final Portfolio Value: {portfolio_values.iloc[-1]:.2f}")
         print(f"Total Return: {total_returns:.2f}")
-        print(f"Annualized Return: {annualized_return:.2f}")
-        print(f"Annualized Volatility: {annualized_volatility:.2f}")
+        print(f"Annualized Return: {annualized_return:.2f}%")
+        print(f"Annualized Volatility: {annualized_volatility:.2f}%")
         print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
         print(f"Sortino Ratio: {sortino_ratio:.2f}")
         print(f"Max Drawdown: {max_drawdown * 100:.2f}%")
