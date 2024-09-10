@@ -14,9 +14,11 @@ def custom_position_logic(df: pd.DataFrame, signals: pd.Series) -> pd.Series:
     return signals.diff().fillna(0)
 
 def main():
-    symbol = 'HQC'
-    start_date = '2022-01-01'
-    end_date = '2024-09-09'
+    symbol = ['HPG']
+    start_date = '2018-01-01'
+    end_date = '2022-12-31'
+    # start_date = '2023-01-01'
+    # end_date = '2024-09-10'
 
     data = DataRetrieval(symbol, start_date, end_date).load_data(interval = '1D')
 
@@ -26,7 +28,6 @@ def main():
     )
 
     data = strategy.generate_signals(data)
-    print(data)
     backtester = Backtester()
     backtester.backtest(data)
     backtester.performance()

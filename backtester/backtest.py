@@ -4,7 +4,6 @@ import mpld3
 import webbrowser
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from backtester.performance import (
     calculate_total_return,
     calculate_annualized_return,
@@ -21,7 +20,7 @@ class Backtester:
     def __init__(
         self,
         initial_cap: float = 10000.0,
-        commission_pct: float = 0.001,
+        commission_pct: float = 0.0001,
         commission_fixed: float = 1.0,
         leverage: float = 1.0
     ):
@@ -52,13 +51,14 @@ class Backtester:
 
     def commission(self, trade_value: float) -> float:
         if trade_value < 10000:
-            commission = self.commission_pct * 1.5
+            commission = self.commission_pct + 0.0005
         else:
             commission = self.commission_pct
         return max(trade_value * commission, self.commission_fixed)
     
     def execute_trade(self, asset: str, signal: int, price: float) -> None:
         trade_value = self.assets_data[asset]["cash"] * self.leverage
+        # tax = 0.001
         if signal > 0 and self.assets_data[asset]["cash"] > 0:
             commission = self.commission(trade_value)
             shares_to_buy = (trade_value - commission) / price
@@ -68,6 +68,7 @@ class Backtester:
         elif signal < 0 and self.assets_data[asset]["positions"] > 0:
             trade_value = self.assets_data[asset]["positions"] * price * self.leverage
             commission = self.commission(trade_value)
+            # income_tax = trade_value * tax
             self.assets_data[asset]["cash"] += (trade_value - commission) / self.leverage
             shares_sold = self.assets_data[asset]["positions"]
             self.assets_data[asset]["positions"] = 0
