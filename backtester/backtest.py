@@ -2,12 +2,12 @@ from typing import List, Dict
 import pandas as pd
 import matplotlib.pyplot as plt
 from backtester.performance import (
-    annualized_return,
-    annualized_volatility,
-    maximum_drawdown,
-    sharpe_ratio,
-    sortino_ratio,
-    total_return,
+    calculate_total_return,
+    calculate_annualized_return,
+    calculate_annualized_volatility,
+    calculate_sharpe_ratio,
+    calculate_sortino_ratio,
+    calculate_maximum_drawdown,
 )
 
 class Backtester:
@@ -76,12 +76,12 @@ class Backtester:
         portfolio_values = pd.Series(self.daily_portfolio_values)
         daily_returns = portfolio_values.pct_change().dropna()
         
-        total_returns = total_return(portfolio_values.iloc[-1], self.initial_cap)
-        annualized_return = annualized_return(total_return, len(portfolio_values))
-        annualized_volatility = annualized_volatility(daily_returns)
-        sharpe_ratio = sharpe_ratio(annualized_return, annualized_volatility)
-        sortino_ratio = sortino_ratio(daily_returns, annualized_return)
-        max_drawdown = maximum_drawdown(portfolio_values)
+        total_returns = calculate_total_return(portfolio_values.iloc[-1], self.initial_cap)
+        annualized_return = calculate_annualized_return(total_returns, len(portfolio_values))
+        annualized_volatility = calculate_annualized_volatility(daily_returns)
+        sharpe_ratio = calculate_sharpe_ratio(annualized_return, annualized_volatility)
+        sortino_ratio = calculate_sortino_ratio(daily_returns, annualized_return)
+        max_drawdown = calculate_maximum_drawdown(portfolio_values)
 
         print(f"Final Portfolio Value: {portfolio_values.iloc[-1]:.2f}")
         print(f"Total Return: {total_returns:.2f}")
@@ -109,6 +109,3 @@ class Backtester:
 
         plt.tight_layout()
         plt.show()
-
-
-
