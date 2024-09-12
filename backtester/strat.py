@@ -5,7 +5,7 @@ class Strategy:
     def __init__(
         self,
         signal_logic: Callable[[pd.Series], int] = None,                     
-        position_logic: Callable[[pd.DataFrame, pd.Series], pd.Series] = None
+        position_logic: Callable[[pd.DataFrame, pd.Series], pd.Series] = None,
     ):
         self.signal_logic = signal_logic or self.default_signal_logic
         self.position_logic = position_logic or self.default_position_logic

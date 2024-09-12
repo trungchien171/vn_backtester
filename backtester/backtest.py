@@ -30,7 +30,7 @@ class Backtester:
         initial_cap: float = 10000.0,
         commission_pct: float = 0.0001,
         commission_fixed: float = 1.0,
-        leverage: float = 1.0
+        leverage: float = 1.0,
     ):
         self.initial_cap = initial_cap
         self.commission_pct = commission_pct
@@ -45,16 +45,26 @@ class Backtester:
             self,
             asset: str,
             trade_type: str,
-            shares: float,
+            shares: int,
             price: float,
-            commission: float
+            commission: float,
+            date: str
     ):
+        cash_value = round(shares * price,2)
+        cash_holding = round(self.assets_data[asset]["cash"],2)
+        if trade_type == "sell":
+            shares = -shares
+        pnl = round(cash_value - commission, 2) if trade_type == "sell" else 0
         self.transaction_log.append({
-            "asset": asset,
+            "date": date,
+            "ticker": asset,
             "trade_type": trade_type,
             "shares": shares,
             "price": price,
-            "commission": commission
+            "cash_value": cash_value,
+            "cash_holding": cash_holding,
+            "pnl": pnl,
+            "commission": commission,
         })
 
     def commission(self, trade_value: float) -> float:
@@ -64,23 +74,23 @@ class Backtester:
             commission = self.commission_pct
         return max(trade_value * commission, self.commission_fixed)
     
-    def execute_trade(self, asset: str, signal: int, price: float) -> None:
+    def execute_trade(self, asset: str, signal: int, price: float, date: str) -> None:
         trade_value = self.assets_data[asset]["cash"] * self.leverage
         # tax = 0.001
         if signal > 0 and self.assets_data[asset]["cash"] > 0:
             commission = self.commission(trade_value)
-            shares_to_buy = (trade_value - commission) / price
+            shares_to_buy = int((trade_value - commission) / price)
             self.assets_data[asset]["positions"] += shares_to_buy
             self.assets_data[asset]["cash"] -= trade_value / self.leverage
-            self.log_transaction(asset, "buy", shares_to_buy, price, commission)
+            self.log_transaction(asset, "buy", shares_to_buy, price, commission, date)
         elif signal < 0 and self.assets_data[asset]["positions"] > 0:
-            trade_value = self.assets_data[asset]["positions"] * price * self.leverage
+            shares_to_sell = int(self.assets_data[asset]["positions"])
+            trade_value = shares_to_sell * price
             commission = self.commission(trade_value)
             # income_tax = trade_value * tax
             self.assets_data[asset]["cash"] += (trade_value - commission) / self.leverage
-            shares_sold = self.assets_data[asset]["positions"]
             self.assets_data[asset]["positions"] = 0
-            self.log_transaction(asset, "sell", shares_sold, price, commission)
+            self.log_transaction(asset, "sell", shares_to_sell, price, commission, date)
         
     def update_portfolio(self, asset: str, price: float) -> None:
         self.assets_data[asset]["position_value"] = self.assets_data[asset]["positions"] * price
@@ -100,9 +110,9 @@ class Backtester:
             }
 
             self.portfolio_history[asset] = []
-
-            for date, row in data[asset].iterrows():
-                self.execute_trade(asset, row["signal"], row["close"])
+            print(data[asset])
+            for _, row in data[asset].iterrows():
+                self.execute_trade(asset, row["signal"], row["close"], row["time"].strftime("%Y-%m-%d"))
                 self.update_portfolio(asset, row["close"])
 
                 if len(self.daily_portfolio_values) < len(data[asset]):
@@ -224,8 +234,8 @@ class Backtester:
                 }
                 th, td {
                     padding: 20px 15px;
-                    text-align: center; /* Center horizontally */
-                    vertical-align: middle; /* Center vertically */
+                    text-align: center;
+                    vertical-align: middle;
                     border-bottom: 1px solid #ddd;
                 }
                 th {
@@ -252,11 +262,14 @@ class Backtester:
                     background-color: white;
                     border-radius: 8px;
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    width: 100%; /* Allow chart to be full width */
+                    width: 100%;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
+                }
+                .trade-table {
+                    margin-top: 40px;
                 }
             </style>
         </head>
@@ -276,16 +289,38 @@ class Backtester:
             <div class="chart-container">
                 <div class="chart">{{ plot_html | safe }}</div>
             </div>
+            
+            <h2>Trade Report</h2>
+            <table class="trade-table">
+                <tr>
+                    <th>Date</th>
+                    <th>Ticker</th>
+                    <th>Quantity</th>
+                    <th>Cash Value</th>
+                    <th>Cash Holding</th>
+                    <th>Realized PnL</th>
+                </tr>
+                {% for trade in trade_log %}
+                <tr>
+                    <td>{{ trade["date"] }}</td>
+                    <td>{{ trade["ticker"] }}</td>
+                    <td>{{ trade["shares"] }}</td>
+                    <td>{{ trade["cash_value"] }}</td>
+                    <td>{{ trade["cash_holding"] }}</td>
+                    <td>{{ trade["pnl"] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
         </body>
         </html>
         """
 
         template = jinja2.Template(html_template)
-        html_content = template.render(metrics=metrics, plot_html=plot_html)
+        html_content = template.render(metrics=metrics, plot_html=plot_html, trade_log=self.transaction_log)
 
         with open(output_html, "w") as f:
             f.write(html_content)
 
         print(f"Report saved to {output_html}")
-        
         webbrowser.open(output_html)
+
