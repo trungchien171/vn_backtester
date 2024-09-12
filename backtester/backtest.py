@@ -31,6 +31,7 @@ class Backtester:
         commission_pct: float = 0.0001,
         commission_fixed: float = 1.0,
         leverage: float = 1.0,
+        weights: Dict[str, float] = None,
     ):
         self.initial_cap = initial_cap
         self.commission_pct = commission_pct
@@ -40,6 +41,11 @@ class Backtester:
         self.portfolio_history: Dict = {}
         self.daily_portfolio_values: List[float] = []
         self.transaction_log: List[Dict] = []
+
+        if weights is None:
+            self.weights = {}
+        else:
+            self.weights = weights
 
     def log_transaction(
             self,
@@ -100,8 +106,12 @@ class Backtester:
     def backtest(self, data: pd.DataFrame | dict[str, pd.DataFrame]):
         if isinstance(data, pd.DataFrame):
             data = {"SINGLE ASSET": data}
+        
+        total_weights = sum(self.weights.values()) if self.weights else len(data)
 
         for asset in data:
+            weight = self.weights.get(asset, 1/total_weights)
+            initial_allocation = self.initial_cap * weight
             self.assets_data[asset] = {
                 "cash": self.initial_cap/len(data),
                 "positions": 0,
@@ -110,15 +120,18 @@ class Backtester:
             }
 
             self.portfolio_history[asset] = []
-            print(data[asset])
             for _, row in data[asset].iterrows():
                 self.execute_trade(asset, row["signal"], row["close"], row["time"].strftime("%Y-%m-%d"))
                 self.update_portfolio(asset, row["close"])
 
-                if len(self.daily_portfolio_values) < len(data[asset]):
-                    self.daily_portfolio_values.append(self.assets_data[asset]["total_value"])
-                else:
-                    self.daily_portfolio_values[len(self.daily_portfolio_values) - 1] += self.assets_data[asset]["total_value"]
+        for i in range(len(next(iter(data.values())))):
+            daily_total_value = sum(self.portfolio_history[asset][i] for asset in data) 
+            self.daily_portfolio_values.append(daily_total_value)
+
+                # if len(self.daily_portfolio_values) < len(data[asset]):
+                #     self.daily_portfolio_values.append(self.assets_data[asset]["total_value"])
+                # else:
+                #     self.daily_portfolio_values[len(self.daily_portfolio_values) - 1] += self.assets_data[asset]["total_value"]
     
     def performance(self, output_html = "backtest_report.html", plot: bool = True) -> None:
         if not self.daily_portfolio_values:
@@ -177,7 +190,9 @@ class Backtester:
     def plot_performance(self, portfolio_values: Dict, daily_returns: pd.DataFrame, rolling_volatility: pd.Series = None) -> None:
         fig, axs = plt.subplots(3, 1, figsize=(12, 10))
 
-        axs[0].plot(portfolio_values, label="Portfolio Value", color="orange")
+        axs[0].plot(portfolio_values, label="Portfolio Value", color="orange", linewidth=2)
+        for asset, history in self.portfolio_history.items():
+            axs[0].plot(history, label=f"{asset} Value", linestyle="--")
         axs[0].set_title("Portfolio Value Over Time")
         axs[0].legend()
 
@@ -203,7 +218,7 @@ class Backtester:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Backtest Report</title>
-            <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+            <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
             <style>
                 body {
                     font-family: 'Roboto', sans-serif;
@@ -226,22 +241,20 @@ class Backtester:
                 }
                 table {
                     width: 100%;
-                    max-width: 800px;
+                    max-width: 1000px;
                     margin: 20px auto;
                     border-collapse: collapse;
                     background-color: white;
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                 }
                 th, td {
-                    padding: 20px 15px;
+                    padding: 12px;
                     text-align: center;
-                    vertical-align: middle;
                     border-bottom: 1px solid #ddd;
                 }
                 th {
                     background-color: #2c3e50;
                     color: white;
-                    font-weight: 700;
                 }
                 tr:nth-child(even) {
                     background-color: #f9f9f9;
@@ -249,32 +262,33 @@ class Backtester:
                 tr:hover {
                     background-color: #f1f1f1;
                 }
-                .metrics-table {
-                    margin-bottom: 40px;
-                }
+                /* Centering the Performance Charts section */
                 .chart-container {
                     display: flex;
                     justify-content: center;
                     align-items: center;
+                    margin: 40px 0; /* Add some margin for better spacing */
                 }
                 .chart {
                     padding: 20px;
                     background-color: white;
                     border-radius: 8px;
                     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    width: 100%;
+                    width: 80%; /* Reduce the width slightly for centering */
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
                 }
-                .trade-table {
-                    margin-top: 40px;
-                }
             </style>
+            <!-- Include jQuery and DataTables -->
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
         </head>
         <body>
+
             <h1>Backtest Report</h1>
+
             <h2>Metrics</h2>
             <table class="metrics-table">
                 {% for key, value in metrics.items() %}
@@ -291,26 +305,42 @@ class Backtester:
             </div>
             
             <h2>Trade Report</h2>
-            <table class="trade-table">
-                <tr>
-                    <th>Date</th>
-                    <th>Ticker</th>
-                    <th>Quantity</th>
-                    <th>Cash Value</th>
-                    <th>Cash Holding</th>
-                    <th>Realized PnL</th>
-                </tr>
-                {% for trade in trade_log %}
-                <tr>
-                    <td>{{ trade["date"] }}</td>
-                    <td>{{ trade["ticker"] }}</td>
-                    <td>{{ trade["shares"] }}</td>
-                    <td>{{ trade["cash_value"] }}</td>
-                    <td>{{ trade["cash_holding"] }}</td>
-                    <td>{{ trade["pnl"] }}</td>
-                </tr>
-                {% endfor %}
+            <table id="tradeTable" class="display">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Ticker</th>
+                        <th>Quantity</th>
+                        <th>Cash Value</th>
+                        <th>Cash Holding</th>
+                        <th>Realized PnL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trade in trade_log %}
+                    <tr>
+                        <td>{{ trade["date"] }}</td>
+                        <td>{{ trade["ticker"] }}</td>
+                        <td>{{ trade["shares"] }}</td>
+                        <td>{{ trade["cash_value"] }}</td>
+                        <td>{{ trade["cash_holding"] }}</td>
+                        <td>{{ trade["pnl"] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
+
+            <!-- Initialize DataTables for the trade report table -->
+            <script>
+                $(document).ready(function() {
+                    $('#tradeTable').DataTable({
+                        "paging": true,
+                        "searching": true,
+                        "ordering": true,
+                        "info": true
+                    });
+                });
+            </script>
         </body>
         </html>
         """
@@ -323,4 +353,3 @@ class Backtester:
 
         print(f"Report saved to {output_html}")
         webbrowser.open(output_html)
-
