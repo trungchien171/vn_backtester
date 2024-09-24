@@ -1,6 +1,9 @@
 import streamlit as st
+import pandas as pd
 import time
 import fields
+allowed_variables = {name: getattr(fields, name) for name in dir(fields) 
+                     if not name.startswith('__') and isinstance(getattr(fields, name), pd.DataFrame)}
 from streamlit_option_menu import option_menu
 
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
@@ -129,6 +132,7 @@ if selected == "Simulate":
 
     with col1:
         st.markdown("<h3 style='text-align: center; color: #000000;'>Write Your Formula</h3>", unsafe_allow_html=True)
+        selected_variable = st.selectbox("Select a variable to add to the formula", list(allowed_variables.keys()))
         code = st.text_area("Write your formula", "close")
 
         if st.button("Simulate"):
@@ -136,7 +140,6 @@ if selected == "Simulate":
             st.write(f"Simulating...")
 
             try:
-                allowed_variables = {name: getattr(fields, name) for name in dir(fields) if not name.startswith('__')}
                 result = eval(code, {"__builtins__": None}, allowed_variables)
                 st.write(f"Simulation Result")
                 st.dataframe(result)
