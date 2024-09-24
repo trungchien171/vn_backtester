@@ -1,7 +1,76 @@
 import streamlit as st
 import time
-from backend import DataRetrieval
+import fields
+from streamlit_option_menu import option_menu
 
+# CSS tuỳ chỉnh cho giao diện đẹp hơn
+st.markdown(
+    """
+    <style>
+    .css-18e3th9 {
+        padding: 0 !important;
+    }
+    .css-1d391kg {
+        background-color: #2c2f33 !important;
+        color: #ffffff !important;
+    }
+    .stTextInput input {
+        background-color: #2c2f33 !important;
+        color: #ffffff !important;
+        border-radius: 8px;
+    }
+    .stButton>button {
+        background-color: #7289da;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #5b6eae;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .stProgress .st-bo {
+        background-color: #7289da;
+    }
+    .stTextArea textarea {
+        background-color: #2c2f33 !important;
+        color: white !important;
+        border-radius: 8px;
+    }
+    .stSlider>div>div>div {
+        background-color: #7289da;
+    }
+    .stSelectbox div[data-baseweb="select"] {
+        background-color: #2c2f33 !important;
+        color: #ffffff !important;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+# Thêm thanh điều hướng ở đầu trang
+selected = option_menu(
+    menu_title=None,  # Bỏ tiêu đề
+    options=["Simulate", "Alphas", "Learn", "Data", "Operators", "Team", "Community"],  # Các tùy chọn menu
+    icons=["graph-up-arrow", "lightning", "book", "database", "calculator", "people", "chat-left-dots"],  # Các biểu tượng tương ứng
+    menu_icon="cast",  # Biểu tượng menu
+    default_index=0,  # Mặc định trang đầu tiên
+    orientation="horizontal",  # Sắp xếp theo chiều ngang
+    styles={
+        "container": {"padding": "5!important", "background-color": "#23272a"},
+        "icon": {"color": "#ffffff", "font-size": "18px"},  # Màu biểu tượng đổi thành trắng
+        "nav-link": {"font-size": "16px", "text-align": "center", "margin": "0px", "color": "#ffffff"},
+        "nav-link-selected": {"background-color": "#7289da"},
+    }
+)
+
+# Sidebar setup
+st.sidebar.markdown("<h2 style='text-align: center; color: #000000;'>Settings</h2>", unsafe_allow_html=True)
+
+# Xử lý phần cài đặt trang 'Simulate'
 if 'saved_settings' not in st.session_state:
     st.session_state.saved_settings = {
         'region': 'VN',
@@ -12,54 +81,6 @@ if 'saved_settings' not in st.session_state:
         'pasteurization': 'True'
     }
 
-st.sidebar.markdown(
-    """
-    <style>
-    .sidebar .sidebar-content {
-        background-color: #F0F4FA;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <style>
-    .stButton>button {
-        background-color: #008CBA;
-        color: white;
-        border: none;
-        border-radius: 15px;
-        padding: 10px 25px;
-        font-size: 16px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: 0.3s;
-    }
-    .stButton>button:hover {
-        background-color: #005F73;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        transform: translateY(-2px);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <h1 style='text-align: center; color: #008CBA; font-family: Arial, sans-serif; margin-bottom: 50px;'>
-        <i class="fas fa-chart-line"></i> Saigon Quant Alpha
-    </h1>
-    """,
-    unsafe_allow_html=True
-)
-
-st.sidebar.markdown("<h2 style='text-align: center;'>Settings</h2>", unsafe_allow_html=True)
-
 saved_settings = st.session_state.saved_settings
 
 region = st.sidebar.selectbox("Region", ['VN', 'US'], index=['VN', 'US'].index(saved_settings['region']))
@@ -69,6 +90,9 @@ if region == 'VN':
 else:
     universe_options = ['US1000']
 
+if saved_settings['universe'] not in universe_options:
+    saved_settings['universe'] = universe_options[0]
+
 universe = st.sidebar.selectbox("Universe", universe_options, index=universe_options.index(saved_settings['universe']))
 
 if region == 'VN':
@@ -76,12 +100,16 @@ if region == 'VN':
 else:
     neutral = ['Sub-Industry', 'Industry', 'Market', 'Sector']
 
+if saved_settings['neutralization'] not in neutral:
+    saved_settings['neutralization'] = neutral[0]
+
 neutralization = st.sidebar.selectbox("Neutralization", neutral, index=neutral.index(saved_settings['neutralization']))
 decay = st.sidebar.text_input("Decay", saved_settings['decay'])
 truncation = st.sidebar.text_input("Truncation", saved_settings['truncation'])
 pasteurization = st.sidebar.selectbox("Pasteurization", ['True', 'False'], index=['True', 'False'].index(saved_settings['pasteurization']))
 delay = st.sidebar.selectbox("Delay", [0, 1])
 
+# Nút Apply để lưu cài đặt
 if st.sidebar.button("Apply"):
     st.session_state.saved_settings = {
         'region': region,
@@ -93,30 +121,65 @@ if st.sidebar.button("Apply"):
     }
     st.sidebar.success("Settings saved successfully!")
 
-col1, col2 = st.columns(2)
+# Nội dung của từng trang
+if selected == "Simulate":
+    st.markdown("<h1 style='text-align: center; color: #7289da;'>Saigon Quant Alpha</h1>", unsafe_allow_html=True)
 
-with col1:
-    st.markdown("<h3 style='text-align: center; color: #008CBA;'>Write Your Formula</h3>", unsafe_allow_html=True)
-    code = st.text_area("Write your formula", "close - open")
+    col1, col2 = st.columns(2)
 
-    if st.button("Simulate"):
-        progress_bar = st.progress(0)
-        st.write(f"Simulating...")
+    with col1:
+        st.markdown("<h3 style='text-align: center; color: #000000;'>Write Your Formula</h3>", unsafe_allow_html=True)
+        code = st.text_area("Write your formula", "close")
 
-        for percent_complete in range(100):
-            time.sleep(0.05)
-            progress_bar.progress(percent_complete + 1)
-        st.write(f"Result of simulation: [Placeholder]")
+        if st.button("Simulate"):
+            progress_bar = st.progress(0)
+            st.write(f"Simulating...")
 
-with col2:
-    st.markdown("<h3 style='text-align: center; color: #008CBA;'>Simulation Results</h3>", unsafe_allow_html=True)
-    st.write("Simulation results will appear here.")
+            try:
+                allowed_variables = {name: getattr(fields, name) for name in dir(fields) if not name.startswith('__')}
+                result = eval(code, {"__builtins__": None}, allowed_variables)
+                st.write(f"Simulation Result")
+                st.dataframe(result)
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
 
-st.markdown(
-    """
-    <div style='text-align: center; margin-top: 50px;'>
-        <p style='color: grey; font-family: Arial, sans-serif;'>Powered by Saigon Quant. Developed for Alpha generation and trading insights.</p>
-        <p style='color: #008CBA; font-size: 14px;'>© 2024 Saigon Quant</p>
-    </div>
-    """, unsafe_allow_html=True
-)
+            for percent_complete in range(100):
+                time.sleep(0.05)
+                progress_bar.progress(percent_complete + 1)
+
+    with col2:
+        st.markdown("<h3 style='text-align: center; color: #000000;'>Simulation Results</h3>", unsafe_allow_html=True)
+        st.write("Simulation results will appear here.")
+
+    st.markdown(
+        """
+        <div style='text-align: center; margin-top: 50px;'>
+            <p style='color: #cccccc;'>Powered by Saigon Quant. Developed for Alpha generation and trading insights.</p>
+            <p style='color: #7289da; font-size: 14px;'>© 2024 Saigon Quant</p>
+        </div>
+        """, unsafe_allow_html=True
+    )
+
+elif selected == "Alphas":
+    st.title("Alphas Page")
+    st.write("Content for Alphas page.")
+
+elif selected == "Learn":
+    st.title("Learning Resources")
+    st.write("Content for Learning Resources page.")
+
+elif selected == "Data":
+    st.title("Data Page")
+    st.write("Content for Data page.")
+
+elif selected == "Competitions":
+    st.title("Competitions Page")
+    st.write("Content for Competitions page.")
+
+elif selected == "Team":
+    st.title("Team Information")
+    st.write("Content for Team page.")
+
+elif selected == "Community":
+    st.title("Community Page")
+    st.write("Content for Community page.")

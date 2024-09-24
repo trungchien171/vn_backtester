@@ -1,25 +1,14 @@
 # backend.py
 import pandas as pd
-from vnstock3 import Vnstock
+import numpy as np
 
-class DataRetrieval:
-    def __init__(self, symbols, start_date=None, end_date=None, provider="vnstock3", truncation=None):
-        self.symbols = [symbol.upper() for symbol in symbols]
-        self.start_date = start_date
-        self.end_date = end_date
-        self.provider = provider
-        self.truncation = truncation
-
-    def load_data(self, interval) -> dict:
-        data = {}
-        if self.provider == "vnstock3":
-            for symbol in self.symbols:
-                stock = Vnstock().stock(symbol=symbol, source='VCI')
-                df = stock.quote.history(start=self.start_date, end=self.end_date, interval=interval)
-                data[symbol] = df
-            return data
-        else:
-            raise ValueError("Provider not supported")
-
-    def load_data_from_csv(self, filepath) -> pd.DataFrame:
-        return pd.read_csv(filepath, index_col='date', parse_dates=True)
+close_path = 'data/vn_stock/price_volume/close_matrix_200101-240101.txt'
+open_path = 'data/vn_stock/price_volume/open_matrix_200101-240101.txt'
+high_path = 'data/vn_stock/price_volume/high_matrix_200101-240101.txt'
+low_path = 'data/vn_stock/price_volume/low_matrix_200101-240101.txt'
+volume_path = 'data/vn_stock/price_volume/volume_matrix_200101-240101.txt'
+close = pd.read_csv(close_path, sep='\t')
+open = pd.read_csv(open_path, sep='\t')
+high = pd.read_csv(high_path, sep='\t')
+low = pd.read_csv(low_path, sep='\t')
+volume = pd.read_csv(volume_path, sep='\t')
