@@ -2,9 +2,6 @@
 import streamlit as st
 import pandas as pd
 import time
-import fields
-allowed_variables = {name: getattr(fields, name) for name in dir(fields) 
-                     if not name.startswith('__') and isinstance(getattr(fields, name), pd.DataFrame)}
 from streamlit_option_menu import option_menu
 from backend import *
 
@@ -89,7 +86,7 @@ saved_settings = st.session_state.saved_settings
 region = st.sidebar.selectbox("Region", ['VN', 'US'], index=['VN', 'US'].index(saved_settings['region']))
 
 if region == 'VN':
-    universe_options = ['VN30', 'HNX30', 'VNALL']
+    universe_options = ['VN30', 'VN100', 'VNALL']
 else:
     universe_options = ['US1000']
 
@@ -131,7 +128,8 @@ if selected == "Simulate":
     col1, col2 = st.columns([10, 10])
 
     with col1:
-        selected_variable = st.selectbox("Select a variable to add to the formula", list(allowed_variables.keys()))
+        universe_variables = list(dataframes[universe].keys())
+        selected_variable = st.selectbox("Select a variable to add to the formula", universe_variables)
         st.header("Write Your Formula")
         formula = st.text_area("Formula", "close")
         if st.button("Run"):
