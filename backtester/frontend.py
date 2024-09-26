@@ -1,3 +1,4 @@
+#frontend.py
 import streamlit as st
 import pandas as pd
 import time
@@ -5,54 +6,52 @@ import fields
 allowed_variables = {name: getattr(fields, name) for name in dir(fields) 
                      if not name.startswith('__') and isinstance(getattr(fields, name), pd.DataFrame)}
 from streamlit_option_menu import option_menu
+from backend import *
 
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
 st.markdown(
     """
     <style>
+    /* Sidebar settings */
+    .css-1d3b3hu {
+        background-color: #f8f9fa !important;
+        padding: 10px;
+        border-right: 1px solid #e9ecef;
+    }
+
+    /* Main content container: widened to 95% */
     .css-18e3th9 {
         padding: 0 !important;
+        max-width: 95% !important;  /* Increased from 90% to 95% */
+        margin-left: auto;
+        margin-right: auto;
     }
-    .css-1d391kg {
-        background-color: #2c2f33 !important;
-        color: #ffffff !important;
-    }
-    .stTextInput input {
-        background-color: #2c2f33 !important;
-        color: #ffffff !important;
-        border-radius: 8px;
-    }
+
+    /* Custom button styles */
     .stButton>button {
-        background-color: #7289da;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-size: 16px;
-        transition: 0.3s;
-    }
-    .stButton>button:hover {
-        background-color: #5b6eae;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    .stProgress .st-bo {
-        background-color: #7289da;
-    }
-    .stTextArea textarea {
-        background-color: #2c2f33 !important;
+        background-color: #007bff !important;
         color: white !important;
-        border-radius: 8px;
+        border-radius: 5px !important;
     }
-    .stSlider>div>div>div {
-        background-color: #7289da;
+
+    /* Custom DataFrame styling */
+    .dataframe {
+        border: 1px solid #dee2e6 !important;
     }
-    .stSelectbox div[data-baseweb="select"] {
-        background-color: #2c2f33 !important;
-        color: #ffffff !important;
+
+    /* Reduced general padding for a more compact layout */
+    .css-1avcm0n {
+        padding: 0.5rem !important;  /* Reduced padding */
+    }
+
+    /* Center the page title */
+    .css-1v0mbdj {
+        text-align: center !important;
     }
     </style>
     """, unsafe_allow_html=True
 )
+
 
 # Thêm thanh điều hướng ở đầu trang
 selected = option_menu(
@@ -128,37 +127,38 @@ if st.sidebar.button("Apply"):
 if selected == "Simulate":
     st.markdown("<h1 style='text-align: center; color: #7289da;'>Saigon Quant Alpha</h1>", unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    # Create columns for input and output areas
+    col1, col2 = st.columns([2, 3])
 
+    # Column for formula input
     with col1:
-        st.markdown("<h3 style='text-align: center; color: #000000;'>Write Your Formula</h3>", unsafe_allow_html=True)
-        selected_variable = st.selectbox("Select a variable to add to the formula", list(allowed_variables.keys()))
-        code = st.text_area("Write your formula", "close")
+        st.header("Write Your Formula")
+        formula = st.text_area("Formula", "close")
+        if st.button("Run"):
+            st.write("Simulating...")
+            with st.spinner("Running simulation..."):
+                time.sleep(2)  # Simulate a delay
+                result = simulation_results(formula, saved_settings)
+                st.success("Simulation completed!")
 
-        if st.button("Simulate"):
-            progress_bar = st.progress(0)
-            st.write(f"Simulating...")
-
-            try:
-                result = eval(code, {"__builtins__": None}, allowed_variables)
-                st.write(f"Simulation Result")
-                st.dataframe(result)
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-
-            for percent_complete in range(100):
-                time.sleep(0.05)
-                progress_bar.progress(percent_complete + 1)
-
+    # Column for simulation results
     with col2:
-        st.markdown("<h3 style='text-align: center; color: #000000;'>Simulation Results</h3>", unsafe_allow_html=True)
-        st.write("Simulation results will appear here.")
+        st.header("Simulation Results")
+        if 'result' in locals():
+            st.dataframe(result)  # Display the results dataframe
+        else:
+            st.write("Simulation results will appear here.")
 
+    # Additional elements for analysis, if any
+    st.subheader("Analysis")
+    st.write("This area can be used for detailed performance metrics and analysis.")
+
+    # Footer
     st.markdown(
         """
         <div style='text-align: center; margin-top: 50px;'>
-            <p style='color: #cccccc;'>Powered by Saigon Quant. Developed for Alpha generation and trading insights.</p>
-            <p style='color: #7289da; font-size: 14px;'>© 2024 Saigon Quant</p>
+            <p style='color: #cccccc;'>Powered by AlphaVerse. Developed for Alpha generation and trading insights.</p>
+            <p style='color: #7289da; font-size: 14px;'>© 2024 AlphaVerse</p>
         </div>
         """, unsafe_allow_html=True
     )
