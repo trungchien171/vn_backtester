@@ -130,8 +130,8 @@ if selected == "Simulate":
     with col1:
         universe_variables = list(dataframes[universe].keys())
         selected_variable = st.selectbox("Select a variable to add to the formula", universe_variables)
-        st.header("Write Your Formula")
-        formula = st.text_area("Formula", "close")
+        st.header("Write Your Alpha")
+        formula = st.text_area("Alpha", "close")
         if st.button("Run"):
             st.write("Simulating...")
             with st.spinner("Running simulation..."):
@@ -141,7 +141,7 @@ if selected == "Simulate":
 
     # Column for simulation results
     with col2:
-        st.header("Simulation Results")
+        st.markdown("<h1 style='text-align: center;'>Simulation Results</h1>", unsafe_allow_html=True)
         if 'result' in locals():
             st.dataframe(result)
             st.write("Simulation results will appear here.")
