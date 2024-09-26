@@ -78,7 +78,8 @@ if 'saved_settings' not in st.session_state:
         'neutralization': 'None',
         'decay': 4,
         'truncation': 0.08,
-        'pasteurization': 'False'
+        'pasteurization': 'False',
+        'delay': 0
     }
 
 saved_settings = st.session_state.saved_settings
@@ -117,7 +118,8 @@ if st.sidebar.button("Apply"):
         'neutralization': neutralization,
         'decay': decay,
         'truncation': truncation,
-        'pasteurization': pasteurization
+        'pasteurization': pasteurization,
+        'delay': delay
     }
     st.sidebar.success("Settings saved successfully!")
 

@@ -2,6 +2,9 @@
 import pandas as pd
 import numpy as np
 
+def delay(alpha, delay):
+    return alpha.shift(delay)
+    
 def truncation(alpha, percentage):
     alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
     alpha_truncated = alpha_normalized.clip(lower=0, upper=percentage)
@@ -60,7 +63,13 @@ def simulation_results(alpha, settings):
         
         if not isinstance(x, pd.DataFrame):
             x = pd.DataFrame(x)
-        
+
+        if 'delay' in settings:
+            x = delay(x, settings['delay'])
+        else:
+            raise KeyError("The 'delay' key is missing in settings.")
+
+
         if 'decay' in settings:
             decay_days = int(settings['decay'])
             result = decay_linear(x, decay_days)
@@ -75,7 +84,7 @@ def simulation_results(alpha, settings):
             result = truncation(result, truncation_percentage)   
         return result
     except Exception as e:
-        return str(e)
+        st.error(f"An error occurred: {e}")
 
 datafields = {
         'VN30': {
