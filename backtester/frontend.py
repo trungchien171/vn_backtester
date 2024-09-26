@@ -1,12 +1,14 @@
 #frontend.py
 import streamlit as st
+import plost
 import pandas as pd
 import time
 from streamlit_option_menu import option_menu
 from backend import *
 
+
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 st.markdown(
     """
     <style>
@@ -155,8 +157,8 @@ if selected == "Simulate":
     st.markdown(
         """
         <div style='text-align: center; margin-top: 50px;'>
-            <p style='color: #cccccc;'>Powered by AlphaVerse. Developed for Alpha generation and trading insights.</p>
-            <p style='color: #7289da; font-size: 14px;'>© 2024 AlphaVerse</p>
+            <p style='color: #cccccc;'>Powered by SaigonQuant. Developed for Alpha generation and trading insights.</p>
+            <p style='color: #7289da; font-size: 14px;'>© 2024 SaigonQuant</p>
         </div>
         """, unsafe_allow_html=True
     )
