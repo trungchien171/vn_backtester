@@ -2,6 +2,13 @@
 import pandas as pd
 import numpy as np
 
+def truncation(alpha, percentage):
+    alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+    alpha_truncated = alpha_normalized.clip(lower=0, upper=percentage)
+    alpha_truncated = alpha_truncated.div(alpha_truncated.sum(axis=1), axis=0)
+    alpha = alpha_truncated
+    return alpha
+
 def decay_linear(alpha, n):
     if n > alpha.shape[0]:
         raise ValueError("n must be less than or equal to the number of rows in the DataFrame.")
@@ -63,6 +70,9 @@ def simulation_results(alpha, settings):
         if 'neutralization' in settings:
             result = neutralization(result, settings['neutralization'], settings['region'])
         
+        if 'truncation' in settings:
+            truncation_percentage = float(settings['truncation'])
+            result = truncation(result, truncation_percentage)   
         return result
     except Exception as e:
         return str(e)

@@ -104,7 +104,7 @@ if saved_settings['neutralization'] not in neutral:
     saved_settings['neutralization'] = neutral[0]
 
 neutralization = st.sidebar.selectbox("Neutralization", neutral, index=neutral.index(saved_settings['neutralization']))
-decay = st.sidebar.slider("Decay", min_value=1, max_value=20, value=saved_settings['decay'])
+decay = st.sidebar.slider("Decay", min_value=0, max_value=20, value=saved_settings['decay'])
 truncation = st.sidebar.text_input("Truncation", saved_settings['truncation'])
 pasteurization = st.sidebar.selectbox("Pasteurization", ['True', 'False'], index=['True', 'False'].index(saved_settings['pasteurization']))
 delay = st.sidebar.selectbox("Delay", [0, 1])
