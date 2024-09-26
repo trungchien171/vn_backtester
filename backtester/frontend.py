@@ -9,6 +9,7 @@ from streamlit_option_menu import option_menu
 from backend import *
 
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
+st.set_page_config(layout="wide")
 st.markdown(
     """
     <style>
@@ -22,7 +23,7 @@ st.markdown(
     /* Main content container: widened to 95% */
     .css-18e3th9 {
         padding: 0 !important;
-        max-width: 95% !important;  /* Increased from 90% to 95% */
+        max-width: 100% !important;  /* Increased from 90% to 95% */
         margin-left: auto;
         margin-right: auto;
     }
@@ -78,9 +79,9 @@ if 'saved_settings' not in st.session_state:
         'region': 'VN',
         'universe': 'VN30',
         'neutralization': 'None',
-        'decay': 0.5,
+        'decay': 4,
         'truncation': 0.08,
-        'pasteurization': 'True'
+        'pasteurization': 'False'
     }
 
 saved_settings = st.session_state.saved_settings
@@ -106,7 +107,7 @@ if saved_settings['neutralization'] not in neutral:
     saved_settings['neutralization'] = neutral[0]
 
 neutralization = st.sidebar.selectbox("Neutralization", neutral, index=neutral.index(saved_settings['neutralization']))
-decay = st.sidebar.text_input("Decay", saved_settings['decay'])
+decay = st.sidebar.slider("Decay", min_value=1, max_value=20, value=saved_settings['decay'])
 truncation = st.sidebar.text_input("Truncation", saved_settings['truncation'])
 pasteurization = st.sidebar.selectbox("Pasteurization", ['True', 'False'], index=['True', 'False'].index(saved_settings['pasteurization']))
 delay = st.sidebar.selectbox("Delay", [0, 1])
@@ -127,17 +128,16 @@ if st.sidebar.button("Apply"):
 if selected == "Simulate":
     st.markdown("<h1 style='text-align: center; color: #7289da;'>Saigon Quant Alpha</h1>", unsafe_allow_html=True)
 
-    # Create columns for input and output areas
-    col1, col2 = st.columns([2, 3])
+    col1, col2 = st.columns([10, 10])
 
-    # Column for formula input
     with col1:
+        selected_variable = st.selectbox("Select a variable to add to the formula", list(allowed_variables.keys()))
         st.header("Write Your Formula")
         formula = st.text_area("Formula", "close")
         if st.button("Run"):
             st.write("Simulating...")
             with st.spinner("Running simulation..."):
-                time.sleep(2)  # Simulate a delay
+                time.sleep(2)
                 result = simulation_results(formula, saved_settings)
                 st.success("Simulation completed!")
 
@@ -145,11 +145,9 @@ if selected == "Simulate":
     with col2:
         st.header("Simulation Results")
         if 'result' in locals():
-            st.dataframe(result)  # Display the results dataframe
-        else:
+            st.dataframe(result)
             st.write("Simulation results will appear here.")
 
-    # Additional elements for analysis, if any
     st.subheader("Analysis")
     st.write("This area can be used for detailed performance metrics and analysis.")
 
