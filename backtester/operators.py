@@ -75,7 +75,7 @@ def rank(inp: pd.DataFrame, rate: int) -> pd.DataFrame:
 
 operators = {
     'ts_mean': ts_mean,
-    'delta': ts_delta,
+    'ts_delta': ts_delta,
     'rank': rank,
     'ts_sum': ts_sum,
     'ts_stddev': ts_stddev,
