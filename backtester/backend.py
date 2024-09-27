@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
+# def pasteurization(alpha, universe):
+#     relavant_instruments = datafields[universe].keys()
+#     return alpha[relavant_instruments].copy()
+
 def delay(alpha, delay):
     return alpha.shift(delay)
     
@@ -64,6 +68,9 @@ def simulation_results(alpha, settings):
         
         if not isinstance(x, pd.DataFrame):
             x = pd.DataFrame(x)
+        
+        # if settings['pasteurization'] == 'True':
+        #     x = pasteurization(x, universe)
 
         if 'delay' in settings:
             x = delay(x, settings['delay'])
