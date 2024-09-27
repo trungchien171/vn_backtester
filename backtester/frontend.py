@@ -1,12 +1,45 @@
 #frontend.py
 import streamlit as st
-import plost
 import pandas as pd
+import numpy as np
 import time
 from streamlit_option_menu import option_menu
 from simulation import simulation_results
 from data import dataframes
-# from backend import *
+
+def run_tests(metrics):
+    test_results = {
+        "Sharpe": (metrics["Sharpe"], 1),
+        "Fitness": (metrics["Fitness"], 3),
+        "Turnover (%)": (metrics["Turnover (%)"], (0, 70)),
+        "Weight Concentration": ("Passed", None),
+    }
+    
+    return test_results
+
+def display_test_results(test_results, col):
+    col.subheader("Test Results")
+
+    for test, value in test_results.items():
+        if test == "Weight Concentration":
+            col.write(f"✅ {test} check passed")
+        elif test == "Turnover (%)":
+            turnover_value, turnover_range = value
+            lower_bound, upper_bound = turnover_range
+            if lower_bound <= turnover_value <= upper_bound:
+                col.write(f"✅ {test} of {turnover_value:.2f}% is within the range of {lower_bound}% to {upper_bound}%")
+            else:
+                col.write(f"❌ {test} of {turnover_value:.2f}% is outside the range of {lower_bound}% to {upper_bound}%")
+        else:
+            metric_value, threshold = value
+            if metric_value < threshold:
+                col.write(f"❌ {test} of {metric_value:.2f} is below the cut-off of {threshold}")
+            else:
+                col.write(f"✅ {test} of {metric_value:.2f} passed the cut-off of {threshold}")
+
+    col.write("⚫ Sub universe is only checked if other checks pass")
+    col.write("⚫ Global correlation is only checked if other checks pass")
+    col.write("⚫ Rolling correlation is only checked if other checks pass")
 
 
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
@@ -163,31 +196,37 @@ if selected == "Simulate":
         overall_drawdown = overall_metrics["Drawdown (%)"]
         overall_margin = overall_metrics["Margin (%)"]
 
-        st.subheader("Overall Metrics")
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        metrics_col, test_col = st.columns([2, 1])
 
-        col1.metric("Sharpe", f"{overall_sharpe:.2f}")
-        col2.metric("Turnover", f"{overall_turnover:.2f}%")
-        col3.metric("Returns", f"{overall_returns:.2f}%")
-        col4.metric("Fitness", f"{overall_fitness:.2f}")
-        col5.metric("Drawdown", f"{overall_drawdown:.2f}%")
-        col6.metric("Margin", f"{overall_margin:.2f}%")
+        with metrics_col:
+            metrics_col.subheader("Overall Metrics")
+            col1, col2, col3, col4, col5, col6 = metrics_col.columns(6)
 
-        st.subheader("Yearly Performance Breakdown")
-        st.dataframe(
-            summary.style.format(
-                {
-                    "Sharpe": "{:.2f}",
-                    "Turnover (%)": "{:.2f}",
-                    "Returns (%)": "{:.2f}",
-                    "Fitness": "{:.2f}",
-                    "Drawdown (%)": "{:.2f}",
-                    "Margin (%)": "{:.2f}",
-                    "Long Side": "{:.0f}",
-                    "Short Side": "{:.0f}",
-                }
+            col1.metric("Sharpe", f"{overall_sharpe:.2f}")
+            col2.metric("Turnover", f"{overall_turnover:.2f}%")
+            col3.metric("Returns", f"{overall_returns:.2f}%")
+            col4.metric("Fitness", f"{overall_fitness:.2f}")
+            col5.metric("Drawdown", f"{overall_drawdown:.2f}%")
+            col6.metric("Margin", f"{overall_margin:.2f}%")
+
+            metrics_col.subheader("Yearly Performance Breakdown")
+            metrics_col.dataframe(
+                summary.style.format(
+                    {
+                        "Sharpe": "{:.2f}",
+                        "Turnover (%)": "{:.2f}",
+                        "Returns (%)": "{:.2f}",
+                        "Fitness": "{:.2f}",
+                        "Drawdown (%)": "{:.2f}",
+                        "Margin (%)": "{:.2f}",
+                        "Long Side": "{:.0f}",
+                        "Short Side": "{:.0f}",
+                    }
+                )
             )
-        )
+
+        test_results = run_tests(overall_metrics)
+        display_test_results(test_results, test_col)
 
     # Footer
     st.markdown(
