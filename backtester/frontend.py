@@ -141,18 +141,52 @@ if selected == "Simulate":
             st.write("Simulating...")
             with st.spinner("Running simulation..."):
                 time.sleep(2)
-                result = simulation_results(formula, saved_settings)
+                fig, summary = simulation_results(formula, saved_settings)
                 st.success("Simulation completed!")
 
     # Column for simulation results
     with col2:
         st.markdown("<h1 style='text-align: center;'>Simulation Results</h1>", unsafe_allow_html=True)
-        if 'result' in locals():
-            st.dataframe(result)
+        if 'fig' in locals():
+            st.plotly_chart(fig)
+        else:
             st.write("Simulation results will appear here.")
 
-    st.subheader("Analysis")
-    st.write("This area can be used for detailed performance metrics and analysis.")
+    if 'summary' in locals():
+        overall_metrics = summary.loc["All"]
+
+        overall_sharpe = overall_metrics["Sharpe"]
+        overall_turnover = overall_metrics["Turnover (%)"]
+        overall_returns = overall_metrics["Returns (%)"]
+        overall_fitness = overall_metrics["Fitness"]
+        overall_drawdown = overall_metrics["Drawdown (%)"]
+        overall_margin = overall_metrics["Margin (%)"]
+
+        st.subheader("Overall Metrics")
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+        col1.metric("Sharpe", f"{overall_sharpe:.2f}")
+        col2.metric("Turnover", f"{overall_turnover:.2f}%")
+        col3.metric("Returns", f"{overall_returns:.2f}%")
+        col4.metric("Fitness", f"{overall_fitness:.2f}")
+        col5.metric("Drawdown", f"{overall_drawdown:.2f}%")
+        col6.metric("Margin", f"{overall_margin:.2f}%")
+
+        st.subheader("Yearly Performance Breakdown")
+        st.dataframe(
+            summary.style.format(
+                {
+                    "Sharpe": "{:.2f}",
+                    "Turnover (%)": "{:.2f}",
+                    "Returns (%)": "{:.2f}",
+                    "Fitness": "{:.2f}",
+                    "Drawdown (%)": "{:.2f}",
+                    "Margin (%)": "{:.2f}",
+                    "Long Side": "{:.0f}",
+                    "Short Side": "{:.0f}",
+                }
+            )
+        )
 
     # Footer
     st.markdown(

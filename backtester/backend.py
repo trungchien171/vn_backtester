@@ -1,6 +1,7 @@
 # backend.py
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
 import streamlit as st
 
 # def pasteurization(alpha, universe):
@@ -64,6 +65,7 @@ def simulation_results(alpha, settings):
     try:
         universe = settings['universe']
         variables = dataframes[universe]
+        prices = (variables['close'] + variables['high'] + variables['low']) / 3
         x = eval(alpha, {"__builtins__": None}, variables)
         
         if not isinstance(x, pd.DataFrame):
@@ -80,7 +82,11 @@ def simulation_results(alpha, settings):
 
         if 'decay' in settings:
             decay_days = int(settings['decay'])
-            result = decay_linear(x, decay_days)
+
+            if decay_days > 0:
+                result = decay_linear(x, decay_days)
+            else:
+                result = x
         else:
             result = x
         
@@ -89,8 +95,112 @@ def simulation_results(alpha, settings):
         
         if 'truncation' in settings:
             truncation_percentage = float(settings['truncation'])
-            result = truncation(result, truncation_percentage)   
-        return result
+            result = truncation(result, truncation_percentage)  
+
+        result = result.fillna(0)
+        
+        # PnL calculation
+        daily_change = prices.diff().fillna(0)
+        pnl = (result.shift(1) * daily_change).sum(axis=1)
+        pnl_curve = pnl.cumsum()
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=pnl_curve.index, y=pnl_curve, mode='lines', name='PnL', line=dict(color='blue')))
+        fig.update_layout(title='PnL Curve', xaxis_title='Date', yaxis_title='PnL')
+
+        # PnL table
+        pnl_table = pd.DataFrame(pnl, columns=['PnL'])
+        pnl_table.index = pd.to_datetime(pnl_table.index)
+
+        # Turnover table
+        money_trading_volume = abs(result.diff().fillna(0) * prices).sum(axis=1)
+        booksize = abs(result * prices).sum(axis=1)
+        turnover = (money_trading_volume / booksize).fillna(0)
+        turnover_table = pd.DataFrame(turnover, columns=['Turnover'])
+        turnover_table.index = pd.to_datetime(turnover_table.index)
+
+        # Total money traded
+        total_money_traded = money_trading_volume.sum()
+
+        # Alpha summary
+        summary = {}
+
+        # Sharpe, Turnover, Returns, Fitness, Drawdown, Margin, Long Side, Short Side
+        for year in range(pnl_table.index.year.min(), pnl_table.index.year.max() + 1):
+            pnl_year = pnl_table['PnL'][pnl_table.index.year == year]
+            turnover_year = turnover_table['Turnover'][turnover_table.index.year == year]
+
+            # Sharpe
+            mean_daily_pnl = pnl_year.mean()
+            std_daily_pnl = pnl_year.std()
+            sharpes = mean_daily_pnl / std_daily_pnl * np.sqrt(252) if std_daily_pnl != 0 else 0
+
+            # Turnover
+            avg_turnover = turnover_year.mean()
+
+            # Returns
+            annualized_pnl = pnl_year.sum() * 252 / len(pnl_year)
+            avg_booksize = booksize[pnl_table.index.year == year].mean()
+            annual_return = annualized_pnl / (avg_booksize) if avg_booksize != 0 else 0
+
+            # Fitness
+            fitness = sharpes * np.sqrt(abs(annual_return) / max(avg_turnover, 0.125))
+
+            # Drawdown
+            cum_pnl = pnl_year.cumsum()
+            running_max = cum_pnl.cummax()
+            drawdown = (running_max - cum_pnl).max()
+            largest_drawdown = drawdown / (avg_booksize) if avg_booksize != 0 else 0
+
+            # Margin
+            total_money_traded_year = money_trading_volume[pnl_table.index.year == year].sum()
+            margin = pnl_year.sum() / total_money_traded_year if total_money_traded_year != 0 else 0
+
+            # Sides
+            long_side = result[result > 0][pnl_table.index.year == year].sum().sum()
+            short_side = result[result < 0][pnl_table.index.year == year].sum().sum()
+
+            # Summary Table
+            summary[year] = {
+                'Sharpe': sharpes,
+                'Turnover (%)': avg_turnover * 100,
+                'Returns (%)': annual_return * 100,
+                'Fitness': fitness,
+                'Drawdown (%)': largest_drawdown * 100,
+                'Margin (%)': margin * 100,
+                'Long Side': long_side,
+                'Short Side': short_side
+            }
+
+            summary_table = pd.DataFrame(summary).T
+            summary_table.index.name = 'Year'
+            summary_table.index = summary_table.index.astype(str)
+
+            overall_sharpe = summary_table['Sharpe'].mean()
+            overall_turnover = summary_table['Turnover (%)'].mean()
+            overall_returns = summary_table['Returns (%)'].mean()
+            overall_fitness = summary_table['Fitness'].mean()
+            overall_drawdown = summary_table['Drawdown (%)'].max()
+            overall_margin = summary_table['Margin (%)'].mean()
+            overall_long_side = summary_table['Long Side'].sum()
+            overall_short_side = summary_table['Short Side'].sum()
+
+            overall_summary = pd.DataFrame(
+                {
+                    'Sharpe': [overall_sharpe],
+                    'Turnover (%)': [overall_turnover],
+                    'Returns (%)': [overall_returns],
+                    'Fitness': [overall_fitness],
+                    'Drawdown (%)': [overall_drawdown],
+                    'Margin (%)': [overall_margin],
+                    'Long Side': [overall_long_side],
+                    'Short Side': [overall_short_side]
+                },
+                index=['All']
+            )
+            summary_table = pd.concat([summary_table, overall_summary])
+            
+        return fig, summary_table
     except Exception as e:
         st.error(f"An error occurred: {e}")
 
