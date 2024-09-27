@@ -138,11 +138,10 @@ if selected == "Simulate":
         st.header("Write Your Alpha")
         formula = st.text_area("Alpha", "close")
         if st.button("Run"):
-            st.write("Simulating...")
             with st.spinner("Running simulation..."):
                 time.sleep(2)
                 fig, summary = simulation_results(formula, saved_settings)
-                st.success("Simulation completed!")
+            st.success("Simulation completed!")
 
     # Column for simulation results
     with col2:
