@@ -4,7 +4,9 @@ import plost
 import pandas as pd
 import time
 from streamlit_option_menu import option_menu
-from backend import *
+from simulation import simulation_results
+from data import dataframes
+# from backend import *
 
 
 # CSS tuỳ chỉnh cho giao diện đẹp hơn
