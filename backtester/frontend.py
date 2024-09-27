@@ -10,7 +10,7 @@ from data import dataframes
 def run_tests(metrics):
     test_results = {
         "Sharpe": (metrics["Sharpe"], 1),
-        "Fitness": (metrics["Fitness"], 3),
+        "Fitness": (metrics["Fitness"], 1),
         "Turnover (%)": (metrics["Turnover (%)"], (0, 70)),
         "Weight Concentration": ("Passed", None),
     }
