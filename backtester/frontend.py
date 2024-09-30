@@ -7,6 +7,7 @@ from streamlit_option_menu import option_menu
 from simulation import simulation_results
 from data import dataframes
 from check_submissions import run_tests, display_test_results
+from operators import operators
 
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
@@ -188,10 +189,10 @@ elif selected == "Data":
     if 'dataframes' in globals() and universe in dataframes:
         universe_data = dataframes[universe]
 
-        columns = st.columns(4)
+        columns = st.columns(5)
 
         for idx, dataset_name in enumerate(universe_data.keys()):
-            col = columns[idx % 4]
+            col = columns[idx % 5]
             col.markdown(
                 f"""
                 <div style="
@@ -214,8 +215,29 @@ elif selected == "Competitions":
     st.write("Content for Competitions page.")
 
 elif selected == "Operators":
-    st.title("Operators Page")
-    st.write("Content for Operators page.")
+    st.subheader("Available Operators")
+
+    if 'operators' in globals():
+        columns = st.columns(5)
+
+        for idx, operator_name in enumerate(operators.keys()):
+            col = columns[idx % 5]
+            col.markdown(
+                f"""
+                <div style="
+                    border: 1px solid #ccc; 
+                    border-radius: 10px; 
+                    padding: 15px; 
+                    margin-bottom: 10px; 
+                    background-color: #f9f9f9;
+                    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
+                    <strong>{operator_name}</strong>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+    else:
+        st.warning("No operators available.")
 
 elif selected == "Team":
     st.title("Team Information")
