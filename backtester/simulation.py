@@ -67,8 +67,11 @@ def simulation_results(alpha, settings):
     try:
         universe = settings['universe']
         variables = dataframes[universe]
+        flat_operators = {}
+        for category, funcs in operators.items():
+            flat_operators.update(funcs)
         prices = (variables['close'] + variables['high'] + variables['low']) / 3
-        x = eval(alpha, {"__builtins__": None}, {**variables, **operators})
+        x = eval(alpha, {"__builtins__": None}, {**variables, **flat_operators})
         
         if not isinstance(x, pd.DataFrame):
             x = pd.DataFrame(x)
@@ -120,7 +123,7 @@ def simulation_results(alpha, settings):
         # Turnover table
         money_trading_volume = abs(result.diff().fillna(0) * prices).sum(axis=1)
         booksize = abs(result * prices).sum(axis=1)
-        turnover = (money_trading_volume / booksize).fillna(0)
+        turnover = (money_trading_volume / booksize).replace([np.inf, -np.inf], 0).fillna(0)
         turnover_table = pd.DataFrame(turnover, columns=['Turnover'])
         turnover_table.index = pd.to_datetime(turnover_table.index)
 

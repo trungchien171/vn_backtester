@@ -1,5 +1,7 @@
+# operators.py
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 
 # Arithmetic Operators
 def log_diff(inp: pd.DataFrame) -> pd.DataFrame:
@@ -38,7 +40,7 @@ def fraction(inp_1: pd.DataFrame, inp_2: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Both inputs must have the same shape.")
     
     division = inp_1 / inp_2
-    out = out - out.astype(int)
+    out = division - division.astype(int)
     return out
 
 def log(inp: pd.DataFrame) -> pd.DataFrame:
@@ -285,45 +287,89 @@ def ts_delta(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     return out
 
 # Cross Sectional Operators
-def rank(inp: pd.DataFrame, rate: int) -> pd.DataFrame:
-    if isinstance(inp, pd.DataFrame):
-        return inp.apply(lambda col: (col.rank(method = 'min') - 1) / (len(col) - 1) if len(col) > 1 else 0, axis=1)
-    elif isinstance(inp, pd.Series):
-        return (inp.rank(method = 'min') - 1) / (len(inp) - 1) if len(inp) > 1 else 0
+def cs_rank(inp: pd.DataFrame, ascending: bool=True, na_option='keep', method='first') -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    out = inp.rank(axis=1, ascending=ascending, na_option=na_option, method=method)
+    return out
+
+def one_side(inp: pd.DataFrame, side: str = 'long') -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if side not in ['long', 'short']:
+        raise ValueError("Side must be either 'long' or 'short'.")
+    
+    out = inp.copy()
+    if side == 'long':
+        out[out < 0] = 0
     else:
-        raise ValueError("Input must be a pandas DataFrame or Series.")
+        out[out > 0] = 0
+    return out
+
+def cs_vector_neut(inp1: pd.DataFrame, inp2: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    
+    if inp1.shape != inp2.shape:
+        raise ValueError(f"Both inputs must have the same shape. Got {inp1.shape} and {inp2.shape}.")
+
+    out = pd.DataFrame(index=inp1.index, columns=inp1.columns)
+    
+    for index in inp1.index:
+        row_inp1 = inp1.loc[index].values
+        row_inp2 = inp2.loc[index].values
+        
+        row_inp2_with_const = sm.add_constant(row_inp2)
+        
+        model = sm.OLS(row_inp1, row_inp2_with_const)
+        outs = model.fit()
+        
+        predicted = outs.predict(row_inp2_with_const)
+        
+        neutralized_row = row_inp1 - predicted
+        
+        out.loc[index] = neutralized_row
+
+    return out
 
 operators = {
-    'log_diff': log_diff,
-    'ceil': ceil,
-    'floor': floor,
-    'divide': divide,
-    'fraction': fraction,
-    'log': log,
-    'min': min,
-    'max': max,
-    'inverse': inverse,
-    'exp': exp,
-    'mul': mul,
-    'nan_mask': nan_mask,
-    'nan_out': nan_out,
-    'power': power,
-    'purify': purify,
-    'replace': replace,
-    'round_df': round_df,
-    'round_down': round_down,
-    's_log_1p': s_log_1p,
-    'sign': sign,
-    'signed_power': signed_power,
-    'sqrt': sqrt,
-    'subtract': subtract,
-    'to_nan': to_nan,
-    'clip_with_log': clip_with_log,
-    'reverse': reverse,
-    'abs': abs,
-    'ts_mean': ts_mean,
-    'ts_sum': ts_sum,
-    'ts_stddev': ts_stddev,
-    'ts_delta': ts_delta,
-    'rank': rank
+    'Arithmetic Operators': {
+        'log_diff': log_diff,
+        'ceil': ceil,
+        'floor': floor,
+        'divide': divide,
+        'fraction': fraction,
+        'log': log,
+        'min': min,
+        'max': max,
+        'inverse': inverse,
+        'exp': exp,
+        'mul': mul,
+        'power': power,
+        'round_df': round_df,
+        'round_down': round_down,
+        'sign': sign,
+        'signed_power': signed_power,
+        'sqrt': sqrt,
+        'subtract': subtract,
+        'abs': abs,
+        'clip_with_log': clip_with_log,
+        'reverse': reverse,
+        'purify': purify,
+        'replace': replace,
+        'nan_mask': nan_mask,
+        'nan_out': nan_out,
+        'to_nan': to_nan
+    },
+    'Time Series Operators': {
+        'ts_mean': ts_mean,
+        'ts_sum': ts_sum,
+        'ts_stddev': ts_stddev,
+        'ts_delta': ts_delta
+    },
+    'Cross Sectional Operators': {
+        'cs_rank': cs_rank,
+        'one_side': one_side,
+        'cs_vector_neut': cs_vector_neut
+    },
 }

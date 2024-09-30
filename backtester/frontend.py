@@ -148,7 +148,7 @@ if selected == "Simulate":
     with col1:
         universe_variables = list(dataframes[universe].keys())
         st.header("Write Your Alpha")
-        formula = st.text_area("Alpha", "rank(daily_return, 4)")
+        formula = st.text_area("Alpha", "cs_rank(daily_return)")
         if st.button("Run"):
             with st.spinner("Running simulation..."):
                 time.sleep(2)
@@ -252,12 +252,10 @@ elif selected == "Competitions":
     st.write("Content for Competitions page.")
 
 elif selected == "Operators":
-    st.subheader("Available Operators")
-
-    if 'operators' in globals():
+    for operator_type, operator_dict in operators.items():
+        st.markdown(f"### {operator_type}")
         columns = st.columns(5)
-
-        for idx, operator_name in enumerate(operators.keys()):
+        for idx, operator_name in enumerate(operator_dict.keys()):
             col = columns[idx % 5]
             col.markdown(
                 f"""
@@ -273,8 +271,6 @@ elif selected == "Operators":
                 """, 
                 unsafe_allow_html=True
             )
-    else:
-        st.warning("No operators available.")
 
 elif selected == "Team":
     st.title("Team Information")
