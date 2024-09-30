@@ -13,6 +13,12 @@ from operators import operators
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
 st.markdown(
     """
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    """,
+    unsafe_allow_html=True
+)
+st.markdown(
+    """
     <style>
     /* Style adjustments for a modern, clean interface */
     .css-18e3th9 {
@@ -32,7 +38,39 @@ st.markdown(
     </style>
     """, unsafe_allow_html=True
 )
-
+st.markdown(
+    """
+    <style>
+        .footer-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .footer-container a {
+            margin: 0 10px;
+            color: #7289da;
+            font-size: 24px;
+            text-decoration: none;
+        }
+        .footer-container a:hover {
+            color: #4CAF50; /* Green hover color */
+        }
+    </style>
+    <div class="footer-container">
+        <a href="https://discord.com/channels/1290146471727075348/1290146472406421516" target="_blank">
+            <i class="fab fa-discord"></i>
+        </a>
+        <a href="https://www.linkedin.com/in/trantrungchien/" target="_blank">
+            <i class="fab fa-linkedin"></i>
+        </a>
+        <a href="https://www.facebook.com/chien.trung.357622/" target="_blank">
+            <i class="fab fa-facebook"></i>
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 selected = option_menu(
     menu_title=None,
