@@ -99,6 +99,9 @@ def simulation_results(alpha, settings):
             result = truncation(result, truncation_percentage)  
 
         result = result.fillna(0)
+
+        if settings.get('region') == 'VN':
+            result = result.shift(2)
         
         # PnL calculation
         daily_change = prices.diff().fillna(0)
