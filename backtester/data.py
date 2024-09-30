@@ -7,6 +7,11 @@ datafields = {
             'high': 'data/vn_stock/price_volume/high_matrix_top30_20120101-20240101.txt',
             'low': 'data/vn_stock/price_volume/low_matrix_top30_20120101-20240101.txt',
             'volume': 'data/vn_stock/price_volume/volume_matrix_top30_20120101-20240101.txt',
+            'vwap': 'data/vn_stock/price_volume/vwap_matrix_top30_20120101-20240101.txt',
+            'adv20': 'data/vn_stock/price_volume/adv20_matrix_top30_20120101-20240101.txt',
+            'adv60': 'data/vn_stock/price_volume/adv60_matrix_top30_20120101-20240101.txt',
+            'adv120': 'data/vn_stock/price_volume/adv120_matrix_top30_20120101-20240101.txt',
+            'daily_return': 'data/vn_stock/price_volume/daily_return_matrix_top30_20120101-20240101.txt',
     },
         'VN100': {
             'close': 'data/vn_stock/price_volume/close_matrix_top100_20120101-20240101.txt',
@@ -14,6 +19,11 @@ datafields = {
             'high': 'data/vn_stock/price_volume/high_matrix_top100_20120101-20240101.txt',
             'low': 'data/vn_stock/price_volume/low_matrix_top100_20120101-20240101.txt',
             'volume': 'data/vn_stock/price_volume/volume_matrix_top100_20120101-20240101.txt',
+            'vwap': 'data/vn_stock/price_volume/vwap_matrix_top100_20120101-20240101.txt',
+            'adv20': 'data/vn_stock/price_volume/adv20_matrix_top100_20120101-20240101.txt',
+            'adv60': 'data/vn_stock/price_volume/adv60_matrix_top100_20120101-20240101.txt',
+            'adv120': 'data/vn_stock/price_volume/adv120_matrix_top100_20120101-20240101.txt',
+            'daily_return': 'data/vn_stock/price_volume/daily_return_matrix_top100_20120101-20240101.txt',
     },
         'VNALL': {
             'close': 'data/vn_stock/price_volume/close_matrix_20120101-20240101.txt',

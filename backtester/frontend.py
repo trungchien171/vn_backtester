@@ -147,9 +147,8 @@ if selected == "Simulate":
 
     with col1:
         universe_variables = list(dataframes[universe].keys())
-        selected_variable = st.selectbox("Select a variable to add to the formula", universe_variables)
         st.header("Write Your Alpha")
-        formula = st.text_area("Alpha", "close")
+        formula = st.text_area("Alpha", "rank(daily_return, 4)")
         if st.button("Run"):
             with st.spinner("Running simulation..."):
                 time.sleep(2)
