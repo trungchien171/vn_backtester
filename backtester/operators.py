@@ -521,13 +521,186 @@ def ts_stddev(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     out = inp.rolling(window=window).std()
     return out
 
-def ts_delta(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+def days_from_last_change(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    out = pd.DataFrame(index=inp.index)
+
+    for col in inp.columns:
+        change = inp[col].diff().ne(0)
+
+        days_since_change = []
+        days_counter = 0
+
+        for has_changed in change:
+            if has_changed:
+                days_counter = 0
+            else:
+                days_counter += 1
+            days_since_change.append(days_counter)
+
+        out[col] = days_since_change
+    return out
+
+def ts_hump_decay(inp: pd.DataFrame, change: float=0.05, relative: bool=False) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    out = inp.copy()
+    
+    for index, row in out.iterrows():
+        if relative:
+            threshold = change * row.max()
+        else:
+            threshold = change
+    
+        for col in out.columns:
+            if row[col] >= threshold:
+                out.at[index, col] = row[col] - (row[col] - threshold) * 0.5
+
+    return out
+
+def ts_inst_tvr(inp: pd.DataFrame, window: int=5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        total_variation = inp[col].diff().abs().rolling(window=window).sum()
+        tvr = total_variation / inp[col].rolling(window=window).mean()
+
+        out[col] = tvr
+    return out
+
+def ts_min(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
     if not isinstance(window, int) or window < 0:
         raise ValueError("Window must be a non-negative integer.")
-    out = inp.diff(window)
+    out = inp.rolling(window=window).min()
     return out
+
+def ts_max(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if not isinstance(window, int) or window < 0:
+        raise ValueError("Window must be a non-negative integer.")
+    out = inp.rolling(window=window).max()
+    return out
+
+def ts_argmin(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if not isinstance(window, int) or window < 0:
+        raise ValueError("Window must be a non-negative integer.")
+    out = inp.rolling(window=window).apply(lambda x: x.idxmin(), raw=False)
+    return out
+
+def ts_argmax(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if not isinstance(window, int) or window < 0:
+        raise ValueError("Window must be a non-negative integer.")
+    out = inp.rolling(window=window).apply(lambda x: x.idxmax(), raw=False)
+    return out
+
+def ts_corr(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    if inp1.shape != inp2.shape:
+        raise ValueError("Both inputs must have the same shape.")
+    
+    out = inp1.rolling(window=window).corr(inp2)
+    return out
+
+def ts_cov(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    if inp1.shape != inp2.shape:
+        raise ValueError("Both inputs must have the same shape.")
+    
+    out = inp1.rolling(window=window).cov(inp2)
+    return out
+
+def ts_rank(inp: pd.DataFrame, window: int, constant: int = 0, ascending: bool=True) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    if window < 1:
+        raise ValueError("Window must be at least 1.")
+    
+    out = inp.rolling(window=window).apply(lambda x: x.rank(ascending=ascending) + constant, raw=False) 
+    return out
+
+def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if moment_order < 1:
+        raise ValueError("Moment order must be at least 1.")
+    if window < 1:
+        raise ValueError("Window must be at least 1.")
+    
+    out = inp.rolling(window=window).apply(lambda x: ((x - x.mean()) ** moment_order).mean(), raw=False)
+    return out
+
+def if_else(cond: pd.Series, t: any, f: any) -> pd.Series:
+    if not isinstance(cond, pd.Series):
+        raise ValueError("Condition must be a pandas Series.")
+    
+    out = cond.apply(lambda x: t if x else f)
+    return out
+
+def ts_delta(inp: pd.DataFrame, time: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if time >= len(inp):
+        raise ValueError("Time must be less than the number of rows in the DataFrame.")
+    
+    out = inp - inp.shift(time)
+    return out
+
+def slope(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+    
+    for time in range(1, window + 1):
+        delta = ts_delta(inp, time)
+        out += delta / time
+    return out
+
+def ts_co_skewness(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int=5, variant: str="right") -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    
+    out = []
+
+    for i in range(len(inp1)):
+        if i < window - 1:
+            out.append(None)
+            continue
+
+        x_window = inp1.iloc[i - window + 1: i + 1]
+        y_window = inp2.iloc[i - window + 1: i + 1]
+
+        mean_x = x_window.mean()
+        mean_y = y_window.mean()
+
+        sig_x = x_window.std(ddof=0)
+        sig_y = y_window.std(ddof=0)
+
+        if variant == "right":
+            co_skewness = ((x_window - mean_x) * (y_window - mean_y) ** 3).mean() / (sig_x * sig_y ** 2)
+        elif variant == "left":
+            co_skewness = ((x_window - mean_x) ** 2 * (y_window - mean_y)).mean() / (sig_x ** 2 * sig_y)
+        else:
+            raise ValueError("Variant must be either 'right' or 'left'.")
+        
+        out.append(co_skewness)
+        return pd.DataFrame(out, index=inp1.index)
 
 operators = {
     'Arithmetic Operators': {
@@ -562,7 +735,22 @@ operators = {
         'ts_mean': ts_mean,
         'ts_sum': ts_sum,
         'ts_stddev': ts_stddev,
-        'ts_delta': ts_delta
+        'ts_delta': ts_delta,
+        'days_from_last_change': days_from_last_change,
+        'ts_hump_decay': ts_hump_decay,
+        'ts_inst_tvr': ts_inst_tvr,
+        'ts_min': ts_min,
+        'ts_max': ts_max,
+        'ts_argmin': ts_argmin,
+        'ts_argmax': ts_argmax,
+        'ts_corr': ts_corr,
+        'ts_cov': ts_cov,
+        'ts_rank': ts_rank,
+        'ts_moment': ts_moment,
+        'if_else': if_else,
+        'slope': slope,
+        'ts_co_skewness': ts_co_skewness
+
     },
     'Cross Sectional Operators': {
         'cs_rank': cs_rank,

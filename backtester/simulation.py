@@ -15,7 +15,8 @@ def delay(alpha, delay):
     
 def truncation(alpha, percentage):
     alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
-    alpha_truncated = alpha_normalized.clip(lower=0, upper=percentage)
+    alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
+    alpha_truncated = alpha_truncated.clip(upper = percentage)
     alpha_truncated = alpha_truncated.div(alpha_truncated.sum(axis=1), axis=0)
     alpha = alpha_truncated
     return alpha
