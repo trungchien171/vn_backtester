@@ -23,6 +23,17 @@ def filter_ops(input_text):
     return [op for op in all_ops if op.startswith(input_text)]
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
+
+st.markdown("""
+    <script>
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.key === 'Enter') {
+            document.querySelector('button[title="Run"]').click();
+        }
+    });
+    </script>
+""", unsafe_allow_html=True)
+
 st.markdown(
     """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -80,19 +91,6 @@ st.markdown(
             <i class="fab fa-facebook"></i>
         </a>
     </div>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <script>
-    document.addEventListener("keydown", function(event) {
-        if (event.ctrlKey && event.key === "Enter") {
-            document.getElementById("run-button").click();
-        }
-    });
-    </script>
     """,
     unsafe_allow_html=True
 )
@@ -174,7 +172,7 @@ if selected == "Simulate":
         st.header("Write Your Alpha")
         formula = st.text_area("Alpha", "")
 
-        if st.button("Run", key="run-button"):
+        if st.button("Run", key="run_button", help="Press Ctrl + Enter to run the simulation."):
             with st.spinner("Running simulation..."):
                 time.sleep(2)
                 fig, summary = simulation_results(formula, saved_settings)
