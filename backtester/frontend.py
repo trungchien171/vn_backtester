@@ -24,16 +24,6 @@ def filter_ops(input_text):
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
 
-st.markdown("""
-    <script>
-    document.addEventListener('keydown', function(event) {
-        if (event.ctrlKey && event.key === 'Enter') {
-            document.querySelector('button[title="Run"]').click();
-        }
-    });
-    </script>
-""", unsafe_allow_html=True)
-
 st.markdown(
     """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -94,6 +84,16 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+st.markdown("""
+    <script>
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.key === 'Enter') {
+            document.querySelector('button[title="Run"]').click();
+        }
+    });
+    </script>
+""", unsafe_allow_html=True)
 
 selected = option_menu(
     menu_title=None,
