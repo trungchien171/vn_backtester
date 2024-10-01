@@ -84,6 +84,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.markdown(
+    """
+    <script>
+    document.addEventListener("keydown", function(event) {
+        if (event.ctrlKey && event.key === "Enter") {
+            document.getElementById("run-button").click();
+        }
+    });
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
 selected = option_menu(
     menu_title=None,
     options=["Simulate", "Alphas", "Learn", "Data", "Operators", "Team", "Community"],
@@ -161,7 +174,7 @@ if selected == "Simulate":
         st.header("Write Your Alpha")
         formula = st.text_area("Alpha", "")
 
-        if st.button("Run"):
+        if st.button("Run", key="run-button"):
             with st.spinner("Running simulation..."):
                 time.sleep(2)
                 fig, summary = simulation_results(formula, saved_settings)
