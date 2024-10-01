@@ -920,6 +920,49 @@ def ts_median(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     result = inp.rolling(window=window).median()
     return result
 
+# Logical Operators
+def convert_float(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.astype(float)
+    return result
+
+def equal(inp1: pd.DataFrame, inp2: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    result = inp1.eq(inp2)
+    return result
+
+def negate(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp * -1
+    return result
+
+def less(inp1: pd.DataFrame, inp2: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    result = inp1.lt(inp2)
+    return result
+
+def is_not_nan(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.notna()
+    return result
+
+def is_nan(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.isna()
+    return result
+
+def is_finite(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.isfinite)
+    return result
+
 operators = {
     'Arithmetic Operators': {
         'log_diff': log_diff,
@@ -1007,5 +1050,14 @@ operators = {
         'cs_normalize': cs_normalize,
         'cs_market_neutralize': cs_market_neutralize,
         'cs_rank_gmean_amean_diff': cs_rank_gmean_amean_diff
+    },
+    'Logical Operators': {
+        'convert_float': convert_float,
+        'equal': equal,
+        'negate': negate,
+        'less': less,
+        'is_not_nan': is_not_nan,
+        'is_nan': is_nan,
+        'is_finite': is_finite
     },
 }
