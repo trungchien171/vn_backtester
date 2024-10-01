@@ -963,6 +963,92 @@ def is_finite(inp: pd.DataFrame) -> pd.DataFrame:
     result = inp.applymap(np.isfinite)
     return result
 
+# Mathematical Operators
+def arc_cos(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.arccos)
+    return result
+
+def arc_sin(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.arcsin)
+    return result
+
+def arc_tan(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.arctan)
+    return result
+
+def tanh(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.tanh)
+    return result
+
+def sin(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.sin)
+    return result
+
+def cos(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(np.cos)
+    return result
+
+def sigmoid(inp: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(lambda x: 1 / (1 + np.exp(-x)))
+    return result
+
+def left_right_tail(inp: pd.DataFrame, maximum: float = -1 * np.inf, minimum: float = -1 * np.inf) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(lambda x: x if minimum < x < maximum else np.nan)
+    return result
+
+def clamp(inp: pd.DataFrame, upper: float = 0, lower: float = 0, inverse: bool = False, mask: float = 0.0) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if inverse:
+        result = inp.applymap(lambda x: np.nan if lower <= x <= upper else x)
+    else:
+        result = inp.clip(lower=lower, upper=upper)
+    result = result.replace(mask, np.nan)
+    return result
+
+def prev_diff_value(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    def find_prev_diff(series, window):
+        for i in range(1, window + 1):
+            if i >= len(series):
+                return np.nan
+            if series.iloc[-1] != series.iloc[-1 - i]:
+                return series.iloc[-1 - i]
+        return np.nan
+    
+    result = inp.apply(lambda x: x.rolling(window=window + 1).apply(lambda y: find_prev_diff(y, window), raw=False))
+    return result
+
+def get_df(inp: pd.DataFrame, val: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp[inp == val]
+    return result
+
+def keep(inp: pd.DataFrame, f: pd.DataFrame, period: int = 5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame) or not isinstance(f, pd.DataFrame):
+        raise ValueError("Both inputs must be pandas DataFrames.")
+    mask = f.rolling(window=period, min_periods=1).apply(lambda x: x.any(), raw=True).astype(bool)
+    result = inp[mask]
+    return result
+
 operators = {
     'Arithmetic Operators': {
         'log_diff': log_diff,
@@ -1059,5 +1145,19 @@ operators = {
         'is_not_nan': is_not_nan,
         'is_nan': is_nan,
         'is_finite': is_finite
+    },
+    'Mathematical Operators': {
+        'arc_cos': arc_cos,
+        'arc_sin': arc_sin,
+        'arc_tan': arc_tan,
+        'tanh': tanh,
+        'sin': sin,
+        'cos': cos,
+        'sigmoid': sigmoid,
+        'left_right_tail': left_right_tail,
+        'clamp': clamp,
+        'prev_diff_value': prev_diff_value,
+        'get_df': get_df,
+        'keep': keep
     },
 }
