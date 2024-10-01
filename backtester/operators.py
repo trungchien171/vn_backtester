@@ -474,27 +474,18 @@ def cs_market_neutralize(inp: pd.DataFrame, mask: pd.DataFrame = None) -> pd.Dat
     out = inp.sub(row_means, axis=0)
     return out
 
-# def cs_rank_gmean_amean_diff(inp: pd.DataFrame, *args) -> pd.DataFrame:
-#     if not isinstance(inp, pd.DataFrame):
-#         raise ValueError("Input must be a pandas DataFrame.")
-#     out = pd.DataFrame()
-
-#     for column in args:
-#         if column in inp.columns:
-#             ranked_values = inp[column].rank()
-
-#             amean = ranked_values.mean()
-
-#             ranked_values_positive = ranked_values[ranked_values > 0]
-#             gmean_value = gmean(ranked_values_positive)
-
-#             diff = gmean_value - amean
-
-#             out[column] = [diff]
-#         else:
-#             raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+def cs_rank_gmean_amean_diff(inp: pd.DataFrame, *args) -> pd.DataFrame:
+    def gmean(x):
+        return np.exp(np.log(x).mean())
     
-#     return out
+    ranked = inp.rank(axis=0, method='average')
+    if args:
+        ranked = ranked[list(args)]
+    
+    gmean_values = ranked.apply(gmean, axis=0)
+    amean_values = ranked.mean(axis=0)
+    result = gmean_values - amean_values
+    return result
 
 # Time Series Operators
 def ts_mean(inp: pd.DataFrame, window: int) -> pd.DataFrame:
@@ -1015,6 +1006,6 @@ operators = {
         'cs_quantile': cs_quantile,
         'cs_normalize': cs_normalize,
         'cs_market_neutralize': cs_market_neutralize,
-        # 'cs_rank_gmean_amean_diff': cs_rank_gmean_amean_diff
+        'cs_rank_gmean_amean_diff': cs_rank_gmean_amean_diff
     },
 }
