@@ -631,7 +631,7 @@ def ts_rank(inp: pd.DataFrame, window: int, constant: int = 0, ascending: bool=T
     if window < 1:
         raise ValueError("Window must be at least 1.")
     
-    out = inp.rolling(window=window).apply(lambda x: x.rank(ascending=ascending) + constant, raw=False) 
+    out = inp.apply(lambda x: x.rolling(window=window).apply(lambda y: pd.Series(y).rank(ascending=ascending)[-1] + constant, raw=False), axis=1)
     return out
 
 def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame:
@@ -701,6 +701,233 @@ def ts_co_skewness(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int=5, varian
         
         out.append(co_skewness)
         return pd.DataFrame(out, index=inp1.index)
+    
+def ts_count_nan(inp: pd.DataFrame, window: int=5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    out = inp.isna().rolling(window=window).sum()
+    return out
+
+def ts_decay_exp_window(inp: pd.DataFrame, window: int=5, factor: float=0.5, nan: bool=True) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    weights = np.array([factor ** i for i in range(window)])
+    weights = weights[::-1] / np.sum(weights)
+    
+    def exp_weighted_sum(arr):
+        return np.convolve(arr, weights, mode='valid')
+    
+    if nan:
+        out = inp.apply(lambda x: pd.Series(exp_weighted_sum(x.fillna(0).values), index=x.index[window-1:]), axis=0)
+        out = out.reindex_like(inp)
+    else:
+        out = inp.apply(lambda x: pd.Series(exp_weighted_sum(x.values), index=x.index[window-1:]), axis=0)
+        out = out.reindex_like(inp)
+    
+    return out
+
+def ts_decay_linear(inp: pd.DataFrame, window: int, dense: bool=True) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    if dense:
+        weights = np.linspace(0, 1, window)
+    else:
+        weights = np.linspace(1, 0, window) ** 2
+
+    weights /= np.sum(weights)
+    
+    def apply_linear_decay(arr):
+        return np.convolve(arr, weights, mode='valid')
+    
+    out = inp.apply(lambda x: pd.Series(apply_linear_decay(x.values), index=x.index[window-1:]), axis=0)
+    out = out.reindex_like(inp)
+    
+    return out
+
+def ts_ir(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    def information_ratio(series):
+        if len(series) < window:
+            return np.nan
+        excess_return = series - series.mean()
+        return excess_return.mean() / excess_return.std()
+    
+    return inp.rolling(window=window, min_periods=window).apply(information_ratio, raw=False)
+
+def ts_kurtosis(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    
+    return inp.rolling(window=window, min_periods=window).kurt()
+
+def ts_mean_diff(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_mean = inp.rolling(window=window).mean()
+    mean_diff = inp - rolling_mean
+    return mean_diff
+
+def ts_max_diff(inp: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_max = inp.rolling(window=window).max()
+    max_diff = inp - rolling_max
+    return max_diff
+
+def ts_min_diff(inp: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_min = inp.rolling(window=window).min()
+    min_diff = inp - rolling_min
+    return min_diff
+
+def ts_partial_corr(x: pd.DataFrame, y: pd.DataFrame, z: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+    if not isinstance(x, pd.DataFrame) or not isinstance(y, pd.DataFrame) or not isinstance(z, pd.DataFrame):
+        raise ValueError("All inputs must be pandas DataFrames.")
+    def partial_corr(x, y, z):
+        x_res = x - np.polyval(np.polyfit(z, x, 1), z)
+        y_res = y - np.polyval(np.polyfit(z, y, 1), z)
+        return np.corrcoef(x_res, y_res)[0, 1]
+    
+    results = []
+    for i in range(window, len(x) + 1):
+        x_window = x.iloc[i-window:i]
+        y_window = y.iloc[i-window:i]
+        z_window = z.iloc[i-window:i]
+        results.append(partial_corr(x_window, y_window, z_window))
+    
+    return pd.DataFrame(results, index=x.index[window-1:])
+
+def ts_percentage(inp: pd.DataFrame, window: int = 5, percentage: float = 0.1) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_mean = inp.rolling(window=window).mean()
+    percentage_change = (inp - rolling_mean) / rolling_mean * 100
+    result = percentage_change[percentage_change.abs() > percentage * 100]
+    return result
+
+def ts_product(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.rolling(window=window).apply(lambda x: x.prod(), raw=True)
+    return result
+
+def ts_scale(inp: pd.DataFrame, window: int = 5, constant: int = 0) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_mean = inp.rolling(window=window).mean()
+    rolling_std = inp.rolling(window=window).std()
+    scaled = (inp - rolling_mean) / rolling_std
+    result = scaled + constant
+    return result
+
+def ts_skewness(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.rolling(window=window).skew()
+    return result
+
+def ts_step(inp: pd.DataFrame, step_size: int = 1) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.applymap(lambda x: 1 if x > 0 else (-1 if x < 0 else 0)) * step_size
+    return result
+
+def ts_triple_corr(x: pd.DataFrame, y: pd.DataFrame, z: pd.DataFrame, window: int = 5) -> pd.DataFrame:
+    if not isinstance(x, pd.DataFrame) or not isinstance(y, pd.DataFrame) or not isinstance(z, pd.DataFrame):
+        raise ValueError("All inputs must be pandas DataFrames.")
+    x_roll = x.rolling(window=window)
+    y_roll = y.rolling(window=window)
+    z_roll = z.rolling(window=window)
+    
+    x_mean = x_roll.mean()
+    y_mean = y_roll.mean()
+    z_mean = z_roll.mean()
+    
+    x_dev = x - x_mean
+    y_dev = y - y_mean
+    z_dev = z - z_mean
+    
+    numerator = (x_dev * y_dev * z_dev).rolling(window=window).mean()
+    
+    std_dev_product = (x_dev.rolling(window=window).std() * 
+                       y_dev.rolling(window=window).std() * 
+                       z_dev.rolling(window=window).std())
+    
+    triple_corr = numerator / std_dev_product
+    
+    return triple_corr
+
+def ts_zscore(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    rolling_mean = inp.rolling(window=window).mean()
+    rolling_std = inp.rolling(window=window).std()
+    zscore = (inp - rolling_mean) / rolling_std
+    return zscore
+
+def ts_rank_gmean_amean_diff(window: int, inp: pd.DataFrame, *args) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    def gmean(x):
+        return np.exp(np.log(x).mean())
+    
+    ranked = inp.rank(axis=0, method='average')
+    rolling_gmean = ranked.rolling(window=window).apply(gmean, raw=True)
+    rolling_amean = ranked.rolling(window=window).mean()
+    result = rolling_gmean - rolling_amean
+    return result
+
+def ts_quantile(inp: pd.DataFrame, window: int = 10, driver: str = "gaussian", sigma: float = 0.5) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    if driver == "gaussian":
+        weights = np.exp(-0.5 * (np.arange(window) - (window - 1) / 2) ** 2 / sigma ** 2)
+        weights /= weights.sum()
+        result = inp.rolling(window=window).apply(lambda x: np.quantile(x, weights=weights), raw=True)
+    elif driver == "uniform":
+        result = inp.rolling(window=window).quantile(0.5)
+    else:
+        raise ValueError("Unsupported driver. Use 'gaussian' or 'uniform'.")
+    return result
+
+def ts_pct_change(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    pct_change = inp.pct_change()
+    result = pct_change.rolling(window=window).std()
+    return result
+
+def ts_ln_change(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    pct_change = inp.pct_change()
+    ln_change = np.log(pct_change + 1)
+    result = ln_change.rolling(window=window).mean()
+    return result
+
+def ts_shift(inp: pd.DataFrame, shift: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.shift(periods=shift)
+    return result
+
+def ts_diff(inp: pd.DataFrame, time_diff: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.diff(periods=time_diff)
+    return result
+
+def ts_median(inp: pd.DataFrame, window: int) -> pd.DataFrame:
+    if not isinstance(inp, pd.DataFrame):
+        raise ValueError("Input must be a pandas DataFrame.")
+    result = inp.rolling(window=window).median()
+    return result
 
 operators = {
     'Arithmetic Operators': {
@@ -749,7 +976,30 @@ operators = {
         'ts_moment': ts_moment,
         'if_else': if_else,
         'slope': slope,
-        'ts_co_skewness': ts_co_skewness
+        'ts_co_skewness': ts_co_skewness,
+        'ts_count_nan': ts_count_nan,
+        'ts_decay_exp_window': ts_decay_exp_window,
+        'ts_decay_linear': ts_decay_linear,
+        'ts_ir': ts_ir,
+        'ts_kurtosis': ts_kurtosis,
+        'ts_mean_diff': ts_mean_diff,
+        'ts_max_diff': ts_max_diff,
+        'ts_min_diff': ts_min_diff,
+        'ts_partial_corr': ts_partial_corr,
+        'ts_percentage': ts_percentage,
+        'ts_product': ts_product,
+        'ts_scale': ts_scale,
+        'ts_skewness': ts_skewness,
+        'ts_step': ts_step,
+        'ts_triple_corr': ts_triple_corr,
+        'ts_zscore': ts_zscore,
+        'ts_rank_gmean_amean_diff': ts_rank_gmean_amean_diff,
+        'ts_quantile': ts_quantile,
+        'ts_pct_change': ts_pct_change,
+        'ts_ln_change': ts_ln_change,
+        'ts_shift': ts_shift,
+        'ts_diff': ts_diff,
+        'ts_median': ts_median
 
     },
     'Cross Sectional Operators': {

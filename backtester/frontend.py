@@ -9,6 +9,18 @@ from data import dataframes
 from check_submissions import run_tests, display_test_results
 from operators import operators
 
+def get_all_operator_names():
+    all_operator_names = []
+    for category, ops in operators.items():
+        all_operator_names.extend(ops.keys())
+    return all_operator_names
+
+all_ops = get_all_operator_names()
+
+def filter_ops(input_text):
+    if input_text == '':
+        return []
+    return [op for op in all_ops if op.startswith(input_text)]
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
 st.markdown(
@@ -146,9 +158,9 @@ if selected == "Simulate":
     col1, col2 = st.columns([10, 10])
 
     with col1:
-        universe_variables = list(dataframes[universe].keys())
         st.header("Write Your Alpha")
-        formula = st.text_area("Alpha", "cs_rank(daily_return)")
+        formula = st.text_area("Alpha", "")
+
         if st.button("Run"):
             with st.spinner("Running simulation..."):
                 time.sleep(2)
