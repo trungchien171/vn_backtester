@@ -131,7 +131,10 @@ if not st.session_state.authenticated:
                 st.error("Username and password cannot be empty.")
             else:
                 if create_account(register_username, register_password, drive_service, st.session_state.user_data):
+                    st.session_state.authenticated = True
+                    st.session_state.username = register_username
                     st.success("Account created successfully! You can now login.")
+                    st.rerun()
                 else:
                     st.error("Username already taken or registration failed.")
 
