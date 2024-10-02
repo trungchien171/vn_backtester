@@ -6,67 +6,81 @@ import numpy as np
 import time
 import toml
 import os
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker
+import io
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 from streamlit_option_menu import option_menu
 from simulation import simulation_results
 from data import dataframes
 from check_submissions import run_tests, display_test_results
 from operators import operators
 
-Base = declarative_base()
+def authenticate_gdrive():
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["google_drive"],
+        scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    return build("drive", "v3", credentials=credentials)
 
-class User(Base):
-    __tablename__ = 'users'
+def load_user_data(drive_service):
+    file_id = get_user_data_file_id(drive_service)
+    if file_id:
+        request = drive_service.files().get_media(fileId=file_id)
+        file_data = io.BytesIO()
+        downloader = MediaIoBaseDownload(file_data, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+        file_data.seek(0)
+        return pd.read_csv(file_data)
+    else:
+        return pd.DataFrame(columns=["username", "password"])
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(50), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+def get_user_data_file_id(drive_service):
+    results = drive_service.files().list(q="name='user_data.csv'", fields="files(id, name)").execute()
+    items = results.get("files", [])
+    if not items:
+        return None
+    return items[0]["id"]
 
+def save_user_data(drive_service, df):
+    file_id = get_user_data_file_id(drive_service)
+    file_metadata = {"name": "user_data.csv"}
+    file_data = io.BytesIO()
+    df.to_csv(file_data, index=False)
+    file_data.seek(0)
+
+    media = MediaIoBaseUpload(file_data, mimetype="text/csv", resumable=True)
+    if file_id:
+        drive_service.files().update(fileId=file_id, media_body=media).execute()
+    else:
+        drive_service.files().create(body=file_metadata, media_body=media).execute()
 def rerun():
     st.markdown("<script>window.location.reload();</script>", unsafe_allow_html=True)
-
-def init_connection():
-    db_secrets = st.secrets["database"]
-    user = db_secrets["USER"]
-    password = db_secrets["PASSWORD"]
-    host = db_secrets["HOST"]
-    port = db_secrets["PORT"]
-    database = db_secrets["DATABASE"]
-
-    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    return Session()
-
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def create_account(username, password):
-    session = init_connection()
-    try:
-        if session.query(User).filter_by(username=username).first() is not None:
-            return False
-        new_user = User(username=username, password=hash_password(password))
-        session.add(new_user)
-        session.commit()
-        return True
-    except Exception as e:
-        session.rollback()
+def create_account(username, password, drive_service, user_data):
+    if username in user_data["username"].values:
         return False
-    finally:
-        session.close()
+    new_entry = pd.DataFrame({"username": [username], "password": [hash_password(password)]})
+    user_data = pd.concat([user_data, new_entry], ignore_index=True)
+    save_user_data(drive_service, user_data)
+    return True
 
-def login(username, password):
-    session = init_connection()
-    try:
-        user = session.query(User).filter_by(username=username).first()
-        if user and user.password == hash_password(password):
-            return True
-        return False
-    finally:
-        session.close()
+def login(username, password, user_data):
+    if username not in user_data["username"].values:
+        return False, "Username does not exist. Please sign up first."
+    stored_password = user_data.loc[user_data["username"] == username, "password"].values[0]
+    if stored_password == hash_password(password):
+        return True, "Logged in successfully!"
+    else:
+        return False, "Incorrect password."
+
+drive_service = authenticate_gdrive()
+user_data = load_user_data(drive_service)
 
 st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
 
@@ -153,12 +167,13 @@ if not st.session_state.logged_in:
         login_password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Login"):
-            if login(login_username, login_password):
+            login_success, message = login(login_username, login_password, user_data)
+            if login_success:
                 st.session_state.logged_in = True
-                st.success("Logged in successfully!")
+                st.success(message)
                 rerun()
             else:
-                st.error("Invalid username or password.")
+                st.error(message)
 
     with tab2:
         st.markdown("<h1 style='text-align: center;'>Sign Up</h1>", unsafe_allow_html=True)
@@ -172,7 +187,7 @@ if not st.session_state.logged_in:
             elif len(register_password) == 0 or len(register_username) == 0:
                 st.error("Username and password cannot be empty.")
             else:
-                if create_account(register_username, register_password):
+                if create_account(register_username, register_password, drive_service, user_data):
                     st.success("Account created successfully! You can now login.")
                 else:
                     st.error("Username already taken or registration failed.")
