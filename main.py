@@ -339,19 +339,29 @@ else:
         st.title("Community Page")
         st.write("Content for Community page.")
 
-    st.markdown("<div class='top-right'>", unsafe_allow_html=True)
-    if st.button("Logout"):
+    st.markdown("""
+        <style>
+        .logout-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    logout_button = st.button("Logout", key="logout_button")
+    if logout_button:
         st.session_state.logged_in = False
         st.session_state.login_success = False
         rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # Footer
-    st.markdown(
-        """
-        <div style='text-align: center; margin-top: 50px;'>
-            <p style='color: #cccccc;'>Powered by SaigonQuant. Developed for Alpha generation and trading insights.</p>
-            <p style='color: #7289da; font-size: 14px;'>© 2024 SaigonQuant</p>
-        </div>
-        """, unsafe_allow_html=True
-    )
+# Footer
+st.markdown(
+    """
+    <div style='text-align: center; margin-top: 50px;'>
+        <p style='color: #cccccc;'>Powered by SaigonQuant. Developed for Alpha generation and trading insights.</p>
+        <p style='color: #7289da; font-size: 14px;'>© 2024 SaigonQuant</p>
+    </div>
+    """, unsafe_allow_html=True
+)
