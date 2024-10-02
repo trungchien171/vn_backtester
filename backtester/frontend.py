@@ -4,6 +4,7 @@ import hashlib
 import pandas as pd
 import numpy as np
 import time
+import toml
 import os
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -12,9 +13,6 @@ from simulation import simulation_results
 from data import dataframes
 from check_submissions import run_tests, display_test_results
 from operators import operators
-from dotenv import load_dotenv
-
-load_dotenv()
 
 Base = declarative_base()
 
@@ -29,11 +27,12 @@ def rerun():
     st.markdown("<script>window.location.reload();</script>", unsafe_allow_html=True)
 
 def init_connection():
-    user = os.getenv("USER")
-    password = os.getenv("PASSWORD")
-    host = os.getenv("HOST")
-    database = os.getenv("DATABASE")
-    port = os.getenv("PORT")
+    db_secrets = st.secrets["database"]
+    user = db_secrets["USER"]
+    password = db_secrets["PASSWORD"]
+    host = db_secrets["HOST"]
+    port = db_secrets["PORT"]
+    database = db_secrets["DATABASE"]
 
     engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}")
     Base.metadata.create_all(engine)
