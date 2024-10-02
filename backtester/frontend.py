@@ -3,6 +3,7 @@ import streamlit as st
 import hashlib
 import pandas as pd
 import numpy as np
+import base64
 import time
 import toml
 import os
@@ -10,6 +11,7 @@ import io
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
+from PIL import Image
 from streamlit_option_menu import option_menu
 from simulation import simulation_results
 from data import dataframes
@@ -78,11 +80,23 @@ def login(username, password, user_data):
         return True, "Logged in successfully!"
     else:
         return False, "Incorrect password."
+    
+def convert_image_to_base64(image_path):
+    with open(image_path, "rb") as file:
+        return base64.b64encode(file.read()).decode("utf-8")
 
 drive_service = authenticate_gdrive()
 user_data = load_user_data(drive_service)
 
-st.set_page_config(layout="wide", initial_sidebar_state="expanded", page_title="SaigonQuant Alpha")
+logo = convert_image_to_base64("saigonquantlogo.png")
+
+
+st.set_page_config(
+        layout="wide", 
+        initial_sidebar_state="expanded", 
+        page_title="SaigonQuant Alpha",
+        page_icon=f"data:image/png;base64,{logo}"
+    )
 
 st.markdown(
     """
