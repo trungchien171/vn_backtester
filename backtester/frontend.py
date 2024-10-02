@@ -57,7 +57,7 @@ def save_user_data(drive_service, df):
     else:
         drive_service.files().create(body=file_metadata, media_body=media).execute()
 def rerun():
-    st.markdown("<script>window.location.reload();</script>", unsafe_allow_html=True)
+    st.rerun()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
