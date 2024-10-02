@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
-from data import dataframes
-from operators import operators
+from data.load_data import dataframes
+from utils.operators import operators
 
 # def pasteurization(alpha, universe):
 #     relavant_instruments = datafields[universe].keys()

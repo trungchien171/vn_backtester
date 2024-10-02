@@ -1,4 +1,5 @@
 .env
 secrets.toml
 vnalpha-sgq-0dc494c4d65f.json
+*.pyc
 __pycache__/
