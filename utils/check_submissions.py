@@ -1,5 +1,7 @@
 #submissions.py
 import pandas as pd
+import streamlit as st
+from utils.alpha_db import submit_alpha
 
 def run_tests(metrics):
     test_results = {
@@ -11,7 +13,7 @@ def run_tests(metrics):
     
     return test_results
 
-def display_test_results(test_results, col):
+def display_test_results(test_results, col, alpha_formula, alpha_settings, metrics, driver_service, username):
     col.subheader("Test Results")
 
     all_tests_passed = True
@@ -41,6 +43,10 @@ def display_test_results(test_results, col):
 
     if all_tests_passed:
         if col.button("Submit"):
-            col.success("Alpha submitted successfully!")
+            try:
+                submit_alpha(driver_service, username, alpha_formula, alpha_settings, metrics)
+                col.success("Alpha submitted successfully!")
+            except Exception as e:
+                col.error(f"Error occurred during submission: {e}")
     else:
         col.warning("All tests must pass to enable submission.")

@@ -4,15 +4,22 @@ import pandas as pd
 import numpy as np
 import time
 import os
+import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 from data.load_data import dataframes
 from utils.simulation import simulation_results
 from utils.check_submissions import run_tests, display_test_results
 from utils.operators import operators
-from utils.authentication import authenticate_gdrive, load_user_data, create_account, rerun, convert_image_to_base64, login
+from utils.authentication import authenticate_gdrive, load_user_data, create_account, convert_image_to_base64, login
+from utils.alpha_db import submit_alpha, load_user_alphas, save_user_alphas, get_user_alpha_file_id
 
 drive_service = authenticate_gdrive()
-user_data = load_user_data(drive_service)
+
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = load_user_data(drive_service)
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
 logo = convert_image_to_base64("logo/saigonquantlogo.png")
 
 st.set_page_config(
@@ -93,10 +100,7 @@ st.markdown("""
     </script>
 """, unsafe_allow_html=True)
 
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-
-if not st.session_state.logged_in:
+if not st.session_state.authenticated:
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
 
     with tab1:
@@ -105,11 +109,12 @@ if not st.session_state.logged_in:
         login_password = st.text_input("Password", type="password", key="login_password")
 
         if st.button("Login"):
-            login_success, message = login(login_username, login_password, user_data)
+            login_success, message = login(login_username, login_password, st.session_state.user_data)
             if login_success:
-                st.session_state.logged_in = True
+                st.session_state.authenticated = True
+                st.session_state.username = login_username
                 st.success(message)
-                rerun()
+                st.rerun()
             else:
                 st.error(message)
 
@@ -125,7 +130,7 @@ if not st.session_state.logged_in:
             elif len(register_password) == 0 or len(register_username) == 0:
                 st.error("Username and password cannot be empty.")
             else:
-                if create_account(register_username, register_password, drive_service, user_data):
+                if create_account(register_username, register_password, drive_service, st.session_state.user_data):
                     st.success("Account created successfully! You can now login.")
                 else:
                     st.error("Username already taken or registration failed.")
@@ -210,19 +215,18 @@ else:
 
             if st.button("Run", key="run_button", help="Press Ctrl + Enter to run the simulation."):
                 with st.spinner("Running simulation..."):
-                    time.sleep(2)
-                    fig, summary = simulation_results(formula, saved_settings)
+                    st.session_state.simulation_results, st.session_state.simulation_summary = simulation_results(formula, st.session_state.saved_settings)
                 st.success("Simulation completed!")
 
         with col2:
             st.markdown("<h1 style='text-align: center;'>Simulation Results</h1>", unsafe_allow_html=True)
-            if 'fig' in locals():
-                st.plotly_chart(fig)
+            if 'simulation_results' in st.session_state:
+                st.plotly_chart(st.session_state.simulation_results, use_container_width=True)
             else:
                 st.write("Simulation results will appear here.")
 
-        if 'summary' in locals():
-            overall_metrics = summary.loc["All"]
+        if 'simulation_summary' in st.session_state:
+            overall_metrics = st.session_state.simulation_summary.loc["All"]
 
             overall_sharpe = overall_metrics["Sharpe"]
             overall_turnover = overall_metrics["Turnover (%)"]
@@ -246,7 +250,7 @@ else:
 
                 metrics_col.subheader("Yearly Performance Breakdown")
                 metrics_col.dataframe(
-                    summary.style.format(
+                    st.session_state.simulation_summary.style.format(
                         {
                             "Sharpe": "{:.2f}",
                             "Turnover (%)": "{:.2f}",
@@ -260,12 +264,43 @@ else:
                     )
                 )
 
+            metrics = {
+                "Sharpe": overall_sharpe,
+                "Turnover (%)": overall_turnover,
+                "Returns (%)": overall_returns,
+                "Fitness": overall_fitness,
+                "Drawdown (%)": overall_drawdown,
+                "Margin (%)": overall_margin
+            }
+
             test_results = run_tests(overall_metrics)
-            display_test_results(test_results, test_col)
+            display_test_results(test_results, test_col, formula, st.session_state.saved_settings, metrics, drive_service, st.session_state["username"])
 
     elif selected == "Alphas":
-        st.title("Alphas Page")
-        st.write("Content for Alphas page.")
+        st.title("Submitted Alphas")
+
+        alpha_data = load_user_alphas(drive_service, st.session_state["username"])
+
+        if not alpha_data.empty:
+            st.markdown("<h3 style='text-align: center;'>Your Submitted Alphas</h3>", unsafe_allow_html=True)
+
+            fig = go.Figure(data=[go.Table(
+                header=dict(values=list(alpha_data.columns),
+                            fill_color='#7289da',
+                            align='center',
+                            font=dict(color='white', size=14)),
+                cells=dict(values=[alpha_data[col] for col in alpha_data.columns],
+                        fill_color='#f9f9f9',
+                        align='center',
+                        font=dict(color='black', size=12))
+            )])
+
+            st.markdown("<div style='display: flex; justify-content: center;'>", unsafe_allow_html=True)
+            st.plotly_chart(fig, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        else:
+            st.warning("No alphas submitted yet.")
 
     elif selected == "Learn":
         st.title("Learning Resources")
@@ -341,7 +376,7 @@ else:
 
     st.markdown("""
         <style>
-        .logout-button {
+        .logout_button {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -352,9 +387,8 @@ else:
 
     logout_button = st.button("Logout", key="logout_button")
     if logout_button:
-        st.session_state.logged_in = False
-        st.session_state.login_success = False
-        rerun()
+        st.session_state.authenticated = False
+        st.rerun()
 
 # Footer
 st.markdown(

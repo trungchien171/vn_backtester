@@ -50,9 +50,6 @@ def save_user_data(drive_service, df):
     else:
         drive_service.files().create(body=file_metadata, media_body=media).execute()
 
-def rerun():
-    st.rerun()
-
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -69,6 +66,7 @@ def login(username, password, user_data):
         return False, "Username does not exist. Please sign up first."
     stored_password = user_data.loc[user_data["username"] == username, "password"].values[0]
     if stored_password == hash_password(password):
+        st.session_state["username"] = username
         return True, "Logged in successfully!"
     else:
         return False, "Incorrect password."
