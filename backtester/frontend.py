@@ -116,8 +116,8 @@ st.markdown(
     <style>
         .footer-container {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 20px;  /* Position at the top */
+            right: 20px; /* Align to the right */
             z-index: 100;
         }
         .footer-container a {
@@ -154,6 +154,15 @@ st.markdown("""
     });
     </script>
 """, unsafe_allow_html=True)
+
+hide_st_style = """
+
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+"""
+st.markdown(hide_st_style, unsafe_allow_html=True)
 
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -404,6 +413,7 @@ else:
     st.markdown("<div class='top-right'>", unsafe_allow_html=True)
     if st.button("Logout"):
         st.session_state.logged_in = False
+        st.session_state.login_success = False
         rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
