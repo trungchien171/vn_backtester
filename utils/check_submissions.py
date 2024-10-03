@@ -13,7 +13,7 @@ def run_tests(metrics):
     
     return test_results
 
-def display_test_results(test_results, col, alpha_formula, alpha_settings, metrics, driver_service, username):
+def show_test_results(test_results, col, alpha_formula, alpha_settings, metrics, driver_service, username):
     col.subheader("Test Results")
 
     all_tests_passed = True

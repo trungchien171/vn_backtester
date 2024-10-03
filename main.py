@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 from data.load_data import dataframes
 from utils.simulation import simulation_results
-from utils.check_submissions import run_tests, display_test_results
+from utils.check_submissions import run_tests, show_test_results
 from utils.operators import operators
 from utils.authentication import authenticate_gdrive, load_user_data, create_account, convert_image_to_base64, login
 from utils.alpha_db import submit_alpha, load_user_alphas, save_user_alphas, get_user_alpha_file_id
@@ -277,7 +277,7 @@ else:
             }
 
             test_results = run_tests(overall_metrics)
-            display_test_results(test_results, test_col, formula, st.session_state.saved_settings, metrics, drive_service, st.session_state["username"])
+            show_test_results(test_results, test_col, formula, st.session_state.saved_settings, metrics, drive_service, st.session_state["username"])
 
     elif selected == "Alphas":
         st.title("Submitted Alphas")
