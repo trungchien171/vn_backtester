@@ -13,12 +13,15 @@ from utils.operators import operators
 def delay(alpha, delay):
     return alpha.shift(delay)
     
-def truncation(alpha, percentage):
-    alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
-    alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
-    alpha_truncated = alpha_truncated.clip(upper = percentage)
-    alpha_truncated = alpha_truncated.div(alpha_truncated.sum(axis=1), axis=0)
-    alpha = alpha_truncated
+def truncation(alpha, percentage, region):
+    if region == 'VN':
+        alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+        alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
+        alpha_truncated = alpha_truncated.clip(lower =0, upper=percentage)
+    else:
+        alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+        alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
+    alpha = alpha_truncated.div(alpha_truncated.sum(axis=1), axis=0)
     return alpha
 
 def decay_linear(alpha, n):
@@ -101,7 +104,7 @@ def simulation_results(alpha, settings):
         
         if 'truncation' in settings:
             truncation_percentage = float(settings['truncation'])
-            result = truncation(result, truncation_percentage)  
+            result = truncation(result, truncation_percentage, settings['region'])  
 
         result = result.fillna(0)
 
