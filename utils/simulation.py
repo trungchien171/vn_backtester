@@ -133,9 +133,10 @@ def simulation_results(alpha, settings):
 
         # Alpha summary
         summary = {}
+        sub_universe_summary = {}
 
         # Sharpe, Turnover, Returns, Fitness, Drawdown, Margin, Long Side, Short Side
-        for year in range(pnl_table.index.year.min(), pnl_table.index.year.max() + 1):
+        for year in range(pnl_table.index.year.min(), 2022):
             pnl_year = pnl_table['PnL'][pnl_table.index.year == year]
             turnover_year = turnover_table['Turnover'][turnover_table.index.year == year]
 
@@ -208,7 +209,21 @@ def simulation_results(alpha, settings):
                 index=['All']
             )
             summary_table = pd.concat([summary_table, overall_summary])
+        
+        for year in [2022, 2023]:
+            if year in pnl_table.index.year:
+                pnl_year = pnl_table['PnL'][pnl_table.index.year == year]
+                mean_daily_pnl = pnl_year.mean()
+                std_daily_pnl = pnl_year.std()
+                sharpes = mean_daily_pnl / std_daily_pnl * np.sqrt(252) if std_daily_pnl != 0 else 0
+
+                sub_universe_summary[year] = {
+                    'Sharpe': sharpes
+                }
+
+                sub_universe_table = pd.DataFrame(sub_universe_summary).T
             
-        return fig, summary_table
+            
+        return fig, summary_table, sub_universe_table
     except Exception as e:
         st.error(f"An error occurred: {e}")

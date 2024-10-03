@@ -219,7 +219,7 @@ else:
 
             if st.button("Run", key="run_button", help="Press Ctrl + Enter to run the simulation."):
                 with st.spinner("Running simulation..."):
-                    st.session_state.simulation_results, st.session_state.simulation_summary = simulation_results(formula, st.session_state.saved_settings)
+                    st.session_state.simulation_results, st.session_state.main_metrics, st.session_state.sub_universe_metrics = simulation_results(formula, st.session_state.saved_settings)
                 st.success("Simulation completed!")
 
         with col2:
@@ -229,8 +229,8 @@ else:
             else:
                 st.write("Simulation results will appear here.")
 
-        if 'simulation_summary' in st.session_state:
-            overall_metrics = st.session_state.simulation_summary.loc["All"]
+        if 'main_metrics' in st.session_state:
+            overall_metrics = st.session_state.main_metrics.loc["All"]
 
             overall_sharpe = overall_metrics["Sharpe"]
             overall_turnover = overall_metrics["Turnover (%)"]
@@ -254,7 +254,7 @@ else:
 
                 metrics_col.subheader("Yearly Performance Breakdown")
                 metrics_col.dataframe(
-                    st.session_state.simulation_summary.style.format(
+                    st.session_state.main_metrics.style.format(
                         {
                             "Sharpe": "{:.2f}",
                             "Turnover (%)": "{:.2f}",
@@ -278,7 +278,7 @@ else:
             }
 
             test_results = run_tests(overall_metrics)
-            show_test_results(test_results, test_col, formula, st.session_state.saved_settings, metrics, drive_service, st.session_state["username"])
+            show_test_results(test_results, test_col, formula, st.session_state.saved_settings, st.session_state.main_metrics, st.session_state.sub_universe_metrics, drive_service, st.session_state["username"])
 
     elif selected == "Alphas":
         st.title("Submitted Alphas")
