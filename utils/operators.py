@@ -622,7 +622,15 @@ def ts_rank(inp: pd.DataFrame, window: int, constant: int = 0, ascending: bool=T
     if window < 1:
         raise ValueError("Window must be at least 1.")
     
-    out = inp.apply(lambda x: x.rolling(window=window).apply(lambda y: pd.Series(y).rank(ascending=ascending)[-1] + constant, raw=False), axis=1)
+    order = 1 if ascending else -1
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        rolling_window = inp[col].rolling(window=window)
+        ranks = rolling_window.apply(
+            lambda x: np.argsort(order * np.argsort(order * x))[-1] + 1 + constant, raw=False
+        )
+        out[col] = ranks
     return out
 
 def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame:

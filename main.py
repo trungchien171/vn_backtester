@@ -218,9 +218,18 @@ else:
             formula = st.text_area("Alpha", "")
 
             if st.button("Run", key="run_button", help="Press Ctrl + Enter to run the simulation."):
-                with st.spinner("Running simulation..."):
-                    st.session_state.simulation_results, st.session_state.main_metrics, st.session_state.sub_universe_metrics = simulation_results(formula, st.session_state.saved_settings)
-                st.success("Simulation completed!")
+                try:
+                    with st.spinner("Running simulation..."):
+                        st.session_state.simulation_results, st.session_state.main_metrics, st.session_state.sub_universe_metrics, st.session_state.result = simulation_results(formula, st.session_state.saved_settings)
+                    st.success("Simulation completed!")
+                except NameError as e:
+                    st.error(f"NameError: {str(e)} - Please check your formula for incorrect field names or function names.")
+                except SyntaxError as e:
+                    st.error(f"SyntaxError: {str(e)} - There's a syntax error in your formula. Please review the formula.")
+                except KeyError as e:
+                    st.error(f"KeyError: {str(e)} - The field or function you referenced doesn't exist.")
+                except Exception as e:
+                    st.error(f"An unexpected error occurred: {str(e)}")
 
         with col2:
             st.markdown("<h1 style='text-align: center;'>Simulation Results</h1>", unsafe_allow_html=True)
@@ -278,7 +287,7 @@ else:
             }
 
             test_results = run_tests(overall_metrics)
-            show_test_results(test_results, test_col, formula, st.session_state.saved_settings, st.session_state.main_metrics, st.session_state.sub_universe_metrics, drive_service, st.session_state["username"])
+            show_test_results(test_results, test_col, formula, st.session_state.saved_settings, st.session_state.main_metrics, st.session_state.sub_universe_metrics, st.session_state.result, drive_service, st.session_state["username"])
 
     elif selected == "Alphas":
         st.title("Submitted Alphas")

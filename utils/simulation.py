@@ -224,6 +224,6 @@ def simulation_results(alpha, settings):
                 sub_universe_table = pd.DataFrame(sub_universe_summary).T
             
             
-        return fig, summary_table, sub_universe_table
+        return fig, summary_table, sub_universe_table, result
     except Exception as e:
         st.error(f"An error occurred: {e}")
