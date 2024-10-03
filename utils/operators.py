@@ -2,8 +2,9 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from scipy.stats import gmean
 import scipy.stats as stats
+from numba import njit
+from scipy.stats import gmean
 
 # Arithmetic Operators
 def log_diff(inp: pd.DataFrame) -> pd.DataFrame:
@@ -615,6 +616,22 @@ def ts_cov(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int) -> pd.DataFrame:
     out = inp1.rolling(window=window).cov(inp2)
     return out
 
+@njit
+def rank_last(arr, order, constant):
+    ranks = np.argsort(order * np.argsort(order * arr))
+    return ranks[-1] + 1 + constant
+
+@njit
+def rolling_rank(arr, window, order, constant):
+    n = len(arr)
+    result = np.empty(n)
+    for i in range(n):
+        if i + 1 < window:
+            result[i] = rank_last(arr[:i + 1], order, constant)
+        else:
+            result[i] = rank_last(arr[i + 1 - window:i + 1], order, constant)
+    return result
+
 def ts_rank(inp: pd.DataFrame, window: int, constant: int = 0, ascending: bool=True) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
@@ -623,14 +640,11 @@ def ts_rank(inp: pd.DataFrame, window: int, constant: int = 0, ascending: bool=T
         raise ValueError("Window must be at least 1.")
     
     order = 1 if ascending else -1
+
     out = pd.DataFrame(index=inp.index, columns=inp.columns)
 
     for col in inp.columns:
-        rolling_window = inp[col].rolling(window=window)
-        ranks = rolling_window.apply(
-            lambda x: np.argsort(order * np.argsort(order * x))[-1] + 1 + constant, raw=False
-        )
-        out[col] = ranks
+        out[col] = rolling_rank(inp[col].values, window, order, constant)
     return out
 
 def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame:
@@ -644,7 +658,7 @@ def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame
     out = inp.rolling(window=window).apply(lambda x: ((x - x.mean()) ** moment_order).mean(), raw=False)
     return out
 
-def if_else(cond: pd.Series, t: any, f: any) -> pd.Series:
+def if_else(cond: pd.Series, t: any, f: any) -> pd.Series:  
     if not isinstance(cond, pd.Series):
         raise ValueError("Condition must be a pandas Series.")
     
