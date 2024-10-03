@@ -62,7 +62,8 @@ st.markdown(
         .footer-container {
             position: fixed;
             bottom: 20px;
-            right: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 100;
         }
         .footer-container a {
