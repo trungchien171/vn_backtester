@@ -1050,17 +1050,38 @@ def ts_rank_gmean_amean_diff(inp: pd.DataFrame, window: int, *args) -> pd.DataFr
         result[col] = rolling_gmean - rolling_amean
     return result
 
+@njit
+def weighted_quantile(values, weights):
+    sorted_indices = np.argsort(values)
+    sorted_values = values[sorted_indices]
+    sorted_weights = weights[sorted_indices]
+
+    weighted_cumsum = np.cumsum(sorted_weights)
+    total_weight = weighted_cumsum[-1]
+
+    if total_weight == 0:
+        return np.nan
+    
+    weighted_cumsum /= total_weight
+    quantile_index = np.searchsorted(weighted_cumsum, 0.5)
+
+    return sorted_values[quantile_index]
+
 def ts_quantile(inp: pd.DataFrame, window: int = 10, driver: str = "gaussian", sigma: float = 0.5) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
+    
     if driver == "gaussian":
         weights = np.exp(-0.5 * (np.arange(window) - (window - 1) / 2) ** 2 / sigma ** 2)
         weights /= weights.sum()
-        result = inp.rolling(window=window).apply(lambda x: np.quantile(x, weights=weights), raw=True)
+
+        result = inp.rolling(window=window).apply(
+            lambda x: weighted_quantile(x, weights), raw=True
+        )
     elif driver == "uniform":
         result = inp.rolling(window=window).quantile(0.5)
     else:
-        raise ValueError("Unsupported driver. Use 'gaussian' or 'uniform'.")
+        raise ValueError("Invalid driver. Must be one of 'gaussian' or 'uniform'.")
     return result
 
 def ts_pct_change(inp: pd.DataFrame, window: int) -> pd.DataFrame:
