@@ -739,32 +739,39 @@ def slope(inp: pd.DataFrame, window: int) -> pd.DataFrame:
 def ts_co_skewness(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int=5, variant: str="right") -> pd.DataFrame:
     if not isinstance(inp1, pd.DataFrame) or not isinstance(inp2, pd.DataFrame):
         raise ValueError("Both inputs must be pandas DataFrames.")
+    if variant not in ['right', 'left']:
+        raise ValueError("Variant must be either 'right' or 'left'.")
+    if inp1.shape != inp2.shape:
+        raise ValueError("Both inputs must have the same shape.")
     
-    out = []
+    def calc_co_skewness(x, y, variant):
+        mean_x, mean_y = x.mean(), y.mean()
+        sig_x, sig_y = x.std(ddof=0), y.std(ddof=0)
 
-    for i in range(len(inp1)):
-        if i < window - 1:
-            out.append(None)
-            continue
-
-        x_window = inp1.iloc[i - window + 1: i + 1]
-        y_window = inp2.iloc[i - window + 1: i + 1]
-
-        mean_x = x_window.mean()
-        mean_y = y_window.mean()
-
-        sig_x = x_window.std(ddof=0)
-        sig_y = y_window.std(ddof=0)
-
-        if variant == "right":
-            co_skewness = ((x_window - mean_x) * (y_window - mean_y) ** 3).mean() / (sig_x * sig_y ** 2)
-        elif variant == "left":
-            co_skewness = ((x_window - mean_x) ** 2 * (y_window - mean_y)).mean() / (sig_x ** 2 * sig_y)
-        else:
-            raise ValueError("Variant must be either 'right' or 'left'.")
+        if sig_x == 0 or sig_y == 0:
+            return np.nan
         
-        out.append(co_skewness)
-        return pd.DataFrame(out, index=inp1.index)
+        if variant == 'right':
+            return ((x - mean_x) * (y - mean_y) ** 3).mean() / (sig_x * sig_y ** 2)
+        else:
+            return ((x - mean_x) ** 2 * (y - mean_y)).mean() / (sig_x ** 2 * sig_y)  
+        
+    out = pd.DataFrame(index=inp1.index, columns=inp1.columns)
+
+    for col in inp1.columns:
+        co_skewness_values = []
+
+        for i in range(len(inp1)):
+            if i < window - 1:
+                co_skewness = np.nan
+            else:
+                x_window = inp1[col].iloc[i - window + 1:i + 1]
+                y_window = inp2[col].iloc[i - window + 1:i + 1]
+                co_skewness = calc_co_skewness(x_window, y_window, variant)
+                co_skewness_values.append(co_skewness)
+        
+        out[col] = co_skewness_values
+    return out
     
 def ts_count_nan(inp: pd.DataFrame, window: int=5) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
