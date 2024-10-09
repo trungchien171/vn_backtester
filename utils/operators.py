@@ -970,7 +970,15 @@ def ts_percentage(inp: pd.DataFrame, window: int = 5, percentage: float = 0.1) -
 def ts_product(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
-    result = inp.rolling(window=window).apply(lambda x: x.prod(), raw=True)
+    
+    result = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        rolling_view = np.lib.stride_tricks.sliding_window_view(inp[col].values, window)
+        rolling_product = np.prod(rolling_view, axis=1)
+
+        result[col].iloc[window - 1:] = rolling_product
+
     return result
 
 def ts_scale(inp: pd.DataFrame, window: int = 5, constant: int = 0) -> pd.DataFrame:
