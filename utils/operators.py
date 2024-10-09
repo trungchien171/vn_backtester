@@ -729,7 +729,7 @@ def slope(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
 
-    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+    out = pd.DataFrame(0, index=inp.index, columns=inp.columns)
     
     for time in range(1, window + 1):
         delta = ts_delta(inp, time)
