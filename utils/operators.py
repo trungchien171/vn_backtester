@@ -1035,16 +1035,19 @@ def ts_zscore(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     zscore = (inp - rolling_mean) / rolling_std
     return zscore
 
-def ts_rank_gmean_amean_diff(window: int, inp: pd.DataFrame, *args) -> pd.DataFrame:
+def ts_rank_gmean_amean_diff(inp: pd.DataFrame, window: int, *args) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
-    def gmean(x):
-        return np.exp(np.log(x).mean())
-    
+
     ranked = inp.rank(axis=0, method='average')
-    rolling_gmean = ranked.rolling(window=window).apply(gmean, raw=True)
-    rolling_amean = ranked.rolling(window=window).mean()
-    result = rolling_gmean - rolling_amean
+    result = pd.DataFrame(index=ranked.index, columns=ranked.columns)
+
+    for col in ranked.columns:
+        log_ranks = np.log(ranked[col].values)
+        rolling_gmean = np.exp(pd.Series(log_ranks).rolling(window=window).mean().values)
+        rolling_amean = ranked[col].rolling(window=window).mean().values
+
+        result[col] = rolling_gmean - rolling_amean
     return result
 
 def ts_quantile(inp: pd.DataFrame, window: int = 10, driver: str = "gaussian", sigma: float = 0.5) -> pd.DataFrame:
