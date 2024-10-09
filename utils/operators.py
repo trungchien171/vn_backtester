@@ -818,17 +818,42 @@ def ts_decay_linear(inp: pd.DataFrame, window: int, dense: bool=True) -> pd.Data
     
     return out
 
+@njit
+def rolling_info_ratio(arr, window):
+    n = len(arr)
+    result = np.full(n, np.nan)
+
+    cum_sum = np.cumsum(arr)
+    cum_sum_sq = np.cumsum(arr ** 2)
+
+    for i in range(window - 1, n):
+        if i >= window:
+            window_sum = cum_sum[i] - cum_sum[i - window]
+            window_sum_sq = cum_sum_sq[i] - cum_sum_sq[i - window]
+        else:
+            window_sum = cum_sum[i]
+            window_sum_sq = cum_sum_sq[i]
+
+        mean = window_sum / window
+        variance = (window_sum_sq / window) - mean ** 2
+        std_dev = np.sqrt(variance)
+
+        if std_dev > 0:
+            excess_return_mean = (arr[i - window + 1:i + 1] - mean).mean()
+            result[i] = excess_return_mean / std_dev
+        else:
+            result[i] = np.nan
+    return result
+
 def ts_ir(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
     
-    def information_ratio(series):
-        if len(series) < window:
-            return np.nan
-        excess_return = series - series.mean()
-        return excess_return.mean() / excess_return.std()
-    
-    return inp.rolling(window=window, min_periods=window).apply(information_ratio, raw=False)
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        out[col] = rolling_info_ratio(inp[col].values, window)
+    return out
 
 def ts_kurtosis(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
