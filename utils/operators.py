@@ -541,15 +541,13 @@ def ts_hump_decay(inp: pd.DataFrame, change: float=0.05, relative: bool=False) -
     
     out = inp.copy()
     
-    for index, row in out.iterrows():
-        if relative:
-            threshold = change * row.max()
-        else:
-            threshold = change
+    if relative:
+        thresholds = change * out.max(axis = 1).values[:, np.newaxis]
+    else:
+        thresholds = np.full(out.shape, change)
     
-        for col in out.columns:
-            if row[col] >= threshold:
-                out.at[index, col] = row[col] - (row[col] - threshold) * 0.5
+    mask = out.values > thresholds
+    out.values[mask] -= (out.values[mask] - thresholds[mask]) * 0.5
 
     return out
 
@@ -582,20 +580,48 @@ def ts_max(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     out = inp.rolling(window=window).max()
     return out
 
+@njit
+def argmin_in_window(arr, window):
+    n = len(arr)
+    result = np.full(n, np.nan)
+
+    for i in range(window - 1, n):
+        result[i] = np.argmin(arr[i - window + 1:i + 1])
+
+    return result
+
 def ts_argmin(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
     if not isinstance(window, int) or window < 0:
         raise ValueError("Window must be a non-negative integer.")
-    out = inp.rolling(window=window).apply(lambda x: x.idxmin(), raw=False)
+    
+    numeric_cols = inp.select_dtypes(include=[np.number]).columns
+    out = inp[numeric_cols].copy()
+    for col in out.columns:
+        out[col] = argmin_in_window(out[col].values, window)
     return out
+
+@njit
+def argmax_in_window(arr, window):
+    n = len(arr)
+    result = np.full(n, np.nan)
+
+    for i in range(window - 1, n):
+        result[i] = np.argmax(arr[i - window + 1:i + 1])
+
+    return result
 
 def ts_argmax(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
     if not isinstance(window, int) or window < 0:
         raise ValueError("Window must be a non-negative integer.")
-    out = inp.rolling(window=window).apply(lambda x: x.idxmax(), raw=False)
+
+    numeric_cols = inp.select_dtypes(include=[np.number]).columns
+    out = inp[numeric_cols].copy()
+    for col in out.columns:
+        out[col] = argmax_in_window(out[col].values, window)
     return out
 
 def ts_corr(inp1: pd.DataFrame, inp2: pd.DataFrame, window: int) -> pd.DataFrame:

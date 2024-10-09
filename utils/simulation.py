@@ -41,7 +41,7 @@ def decay_linear(alpha, n):
     
     return alpha_decay
 
-def neutralization(alpha, method, region):
+def neutralization(alpha, method, region): 
     if region == 'US':
         if method == "Market":
             alpha = alpha - alpha.mean()
