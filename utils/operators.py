@@ -855,11 +855,35 @@ def ts_ir(inp: pd.DataFrame, window: int) -> pd.DataFrame:
         out[col] = rolling_info_ratio(inp[col].values, window)
     return out
 
+@njit
+def rolling_kurtosis(arr, window):
+    n = len(arr)
+    result = np.full(n, np.nan)
+
+    for i in range(window - 1, n):
+        if i >= window:
+            window_data = arr[i - window + 1:i + 1]
+            mean = np.mean(window_data)
+            variance = np.mean((window_data - mean) ** 2)
+            std_dev = np.sqrt(variance)
+            
+            if std_dev > 0:
+                kurt = np.mean(((window_data - mean)/std_dev) ** 4) - 3
+                result[i] = kurt
+            else:
+                result[i] = np.nan
+    return result
+
 def ts_kurtosis(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
         raise ValueError("Input must be a pandas DataFrame.")
     
-    return inp.rolling(window=window, min_periods=window).kurt()
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        out[col] = rolling_kurtosis(inp[col].values, window)
+    
+    return out
 
 def ts_mean_diff(inp: pd.DataFrame, window: int) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
