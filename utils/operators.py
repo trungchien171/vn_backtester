@@ -906,22 +906,58 @@ def ts_min_diff(inp: pd.DataFrame, window: int = 5) -> pd.DataFrame:
     min_diff = inp - rolling_min
     return min_diff
 
+@njit
+def ordinary_least_squares(X, y):
+    X = np.column_stack((np.ones(X.shape[0]), X))
+    XtX = X.T @ X
+    if np.linalg.det(XtX) == 0:
+        return np.zeros(X.shape[1])
+    beta = np.linalg.inv(XtX) @ (X.T @ y)
+    return beta
+
+@njit
+def calculate_partial_corr(x, y, z):
+    n = len(z)
+    z_matrix = np.empty((n, 2))
+    z_matrix[:, 0] = 1
+    z_matrix[:, 1] = z
+
+    coeff_x = ordinary_least_squares(z_matrix, x)
+    coeff_y = ordinary_least_squares(z_matrix, y)
+
+    if np.all(coeff_x == 0) or np.all(coeff_y == 0):
+        return np.nan
+
+    x_res = x - (z_matrix @ coeff_x)
+    y_res = y - (z_matrix @ coeff_y)
+
+    return np.corrcoef(x_res, y_res)[0, 1]
+
 def ts_partial_corr(x: pd.DataFrame, y: pd.DataFrame, z: pd.DataFrame, window: int = 5) -> pd.DataFrame:
     if not isinstance(x, pd.DataFrame) or not isinstance(y, pd.DataFrame) or not isinstance(z, pd.DataFrame):
         raise ValueError("All inputs must be pandas DataFrames.")
-    def partial_corr(x, y, z):
-        x_res = x - np.polyval(np.polyfit(z, x, 1), z)
-        y_res = y - np.polyval(np.polyfit(z, y, 1), z)
-        return np.corrcoef(x_res, y_res)[0, 1]
+    if x.shape != y.shape or x.shape != z.shape:
+        raise ValueError("All inputs must have the same shape.")
     
-    results = []
-    for i in range(window, len(x) + 1):
-        x_window = x.iloc[i-window:i]
-        y_window = y.iloc[i-window:i]
-        z_window = z.iloc[i-window:i]
-        results.append(partial_corr(x_window, y_window, z_window))
+    results = pd.DataFrame(index=x.index, columns=x.columns)
+
+    for col in range(x.shape[1]):
+        column_results = []
+
+        for i in range(window - 1, len(x)):
+            x_window = x.iloc[i - window + 1:i + 1, col].values.flatten()
+            y_window = y.iloc[i - window + 1:i + 1, col].values.flatten()
+            z_window = z.iloc[i - window + 1:i + 1, col].values.flatten()
+
+            if len(x_window) == len(y_window) == len(z_window):
+                corr = calculate_partial_corr(x_window, y_window, z_window)
+                column_results.append(corr)
+            else:
+                column_results.append(np.nan)
+
+        results.iloc[window - 1:, col] = column_results
     
-    return pd.DataFrame(results, index=x.index[window-1:])
+    return results
 
 def ts_percentage(inp: pd.DataFrame, window: int = 5, percentage: float = 0.1) -> pd.DataFrame:
     if not isinstance(inp, pd.DataFrame):
