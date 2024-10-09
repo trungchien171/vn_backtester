@@ -681,7 +681,32 @@ def ts_moment(inp: pd.DataFrame, moment_order: int, window: int) -> pd.DataFrame
     if window < 1:
         raise ValueError("Window must be at least 1.")
     
-    out = inp.rolling(window=window).apply(lambda x: ((x - x.mean()) ** moment_order).mean(), raw=False)
+    out = pd.DataFrame(index=inp.index, columns=inp.columns)
+
+    for col in inp.columns:
+        values = inp[col].values
+
+        cum_sum = np.cumsum(values)
+        cum_sum_sq = np.cumsum(values ** 2)
+
+        rolling_means = np.full(len(values), np.nan)
+        rolling_moments = np.full(len(values), np.nan)
+
+        for i in range(window - 1, len(values)):
+            if i >= window:
+                window_sum = cum_sum[i] - cum_sum[i - window]
+                window_sum_sq = cum_sum_sq[i] - cum_sum_sq[i - window]
+            else:
+                window_sum = cum_sum[i]
+                window_sum_sq = cum_sum_sq[i]
+
+            mean = window_sum / window
+            moment = ((window_sum_sq / window) - mean**2) ** (moment_order/2)
+
+            rolling_means[i] = mean
+            rolling_moments[i] = moment
+        
+        out[col] = rolling_moments
     return out
 
 def if_else(cond: pd.Series, t: any, f: any) -> pd.Series:  
