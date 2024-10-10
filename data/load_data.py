@@ -38,6 +38,10 @@ datafields = {
             'vn30f1m_high': 'data/vn_stock/price_volume/vn30f1m_high_series_20120101-20240101.txt',
             'vn30f1m_low': 'data/vn_stock/price_volume/vn30f1m_low_series_20120101-20240101.txt',
             'vn30f1m_volume': 'data/vn_stock/price_volume/vn30f1m_volume_series_20120101-20240101.txt',
+            'close_ridgemodel': 'data/vn_stock/linear_models/ridge_close_top100.txt',
+            'open_ridgemodel': 'data/vn_stock/linear_models/ridge_open_top100.txt',
+            'high_ridgemodel': 'data/vn_stock/linear_models/ridge_high_top100.txt',
+            'low_ridgemodel': 'data/vn_stock/linear_models/ridge_low_top100.txt',
     },
         'VNALL': {
             'close': 'data/vn_stock/price_volume/close_matrix_20120101-20240101.txt',
