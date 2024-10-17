@@ -108,10 +108,8 @@ def simulation_results(alpha, settings):
         else:
             result = x
 
-        print(f"Before neutralization: {result}")
         if 'neutralization' in settings:
             result = neutralization(result, settings['neutralization'], settings['region'])
-        print(f"After neutralization: {result}")
         
         if 'truncation' in settings:
             truncation_percentage = float(settings['truncation'])
