@@ -17,7 +17,10 @@ def truncation(alpha, percentage, region):
     if region == 'VN':
         alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
         alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
-        alpha_truncated = alpha_truncated.clip(lower =0, upper=percentage)
+        alpha_truncated = alpha_truncated.clip(lower = 0, upper=percentage)
+    elif region == 'Forex':
+        alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+        alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
     else:
         alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
         alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
@@ -66,6 +69,12 @@ def neutralization(alpha, method, region):
         else:
             alpha = alpha
         return alpha
+    if region == 'Forex':
+        if method == "Market":
+            alpha = alpha - alpha.mean()
+        if method == "None":
+            alpha = alpha
+        return alpha
     
 def simulation_results(alpha, settings):
     try:
@@ -98,9 +107,11 @@ def simulation_results(alpha, settings):
                 result = x
         else:
             result = x
-        
+
+        print(f"Before neutralization: {result}")
         if 'neutralization' in settings:
             result = neutralization(result, settings['neutralization'], settings['region'])
+        print(f"After neutralization: {result}")
         
         if 'truncation' in settings:
             truncation_percentage = float(settings['truncation'])
@@ -225,7 +236,6 @@ def simulation_results(alpha, settings):
                 }
 
                 sub_universe_table = pd.DataFrame(sub_universe_summary).T
-            
             
         return fig, summary_table, sub_universe_table, result
     except Exception as e:

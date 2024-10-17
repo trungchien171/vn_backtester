@@ -173,10 +173,12 @@ else:
 
         saved_settings = st.session_state.saved_settings
 
-        region = st.sidebar.selectbox("Region", ['VN', 'US'], index=['VN', 'US'].index(saved_settings['region']))
+        region = st.sidebar.selectbox("Region", ['VN', 'US', 'Forex'], index=['VN', 'US', 'Forex'].index(saved_settings['region']))
 
         if region == 'VN':
             universe_options = ['VN30', 'VN100', 'VNALL']
+        elif region == 'Forex':
+            universe_options = ['USDPairs']
         else:
             universe_options = ['US1000']
 
@@ -187,6 +189,8 @@ else:
 
         if region == 'VN':
             neutral = ['None']
+        elif region == 'Forex':
+            neutral = ['None', 'Market']
         else:
             neutral = ['Sub-Industry', 'Industry', 'Market', 'Sector']
 
@@ -322,9 +326,14 @@ else:
     elif selected == "Data":
         st.subheader("Select Region and Universe")
 
-        region = st.selectbox("Region", ['VN', 'US'], key="region_selectbox")
+        region = st.selectbox("Region", ['VN', 'US', 'Forex'], key="region_selectbox")
 
-        universe_options = ['VN30', 'VN100', 'VNALL'] if region == 'VN' else ['US1000']
+        if region == 'VN':
+            universe_options = ['VN30', 'VN100', 'VNALL']
+        elif region == 'Forex':
+            universe_options = ['USDPairs']
+        else:
+            universe_options = ['US1000']
 
         universe = st.selectbox("Universe", universe_options, key="universe_selectbox")
 
