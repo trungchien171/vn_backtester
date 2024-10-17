@@ -13,14 +13,19 @@ from utils.operators import operators
 def delay(alpha, delay):
     return alpha.shift(delay)
     
-def truncation(alpha, percentage, region):
+def truncation(alpha, percentage, region, neutralization):
     if region == 'VN':
         alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
         alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
         alpha_truncated = alpha_truncated.clip(lower = 0, upper=percentage)
     elif region == 'Forex':
-        alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
-        alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
+        if neutralization == 'Market':
+            alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+            alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
+        else:
+            alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
+            alpha_truncated = alpha_normalized.where(alpha_normalized >= 0, other=alpha_normalized)
+            alpha_truncated = alpha_truncated.clip(lower = 0, upper=percentage)
     else:
         alpha_normalized = alpha.div(alpha.sum(axis=1), axis=0)
         alpha_truncated = alpha_normalized.clip(lower=-percentage, upper=percentage)
@@ -113,7 +118,7 @@ def simulation_results(alpha, settings):
         
         if 'truncation' in settings:
             truncation_percentage = float(settings['truncation'])
-            result = truncation(result, truncation_percentage, settings['region'])  
+            result = truncation(result, truncation_percentage, settings['region'], settings['neutralization'])  
 
         result = result.fillna(0)
 
