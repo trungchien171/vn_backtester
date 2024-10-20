@@ -1,1 +1,1 @@
-
+![Alt text](D:\github\vn_backtester\logo\Screenshot 2024-10-20 225343.png)
